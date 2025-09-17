@@ -37,12 +37,21 @@
         <!-- Settings Options -->
         <div class="divide-y">
             <!-- Account -->
-            <div class="p-4 cursor-pointer transition-colors" id="accountSettings" style="hover:background-color: var(--bg-tertiary);">
-                <div class="flex items-center">
-                    <i class="fas fa-user w-6" style="color: var(--text-secondary);"></i>
-                    <div class="ml-4">
-                        <div class="font-medium" style="color: var(--text-primary);">Account</div>
-                        <div class="text-sm" style="color: var(--text-secondary);">Privacy, security, change number</div>
+            <div class="p-4 transition-colors" id="accountSettings" style="hover:background-color: var(--bg-tertiary);">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <i class="fas fa-user w-6" style="color: var(--text-secondary);"></i>
+                        <div class="ml-4">
+                            <div class="font-medium" style="color: var(--text-primary);">Profile Visibility</div>
+                            <div class="text-sm" style="color: var(--text-secondary);">Allow others to find you in search</div>
+                        </div>
+                    </div>
+                    <div class="flex items-center">
+                        <span id="privacyLabel" class="text-sm mr-3" style="color: var(--text-secondary);">Private</span>
+                        <label class="toggle">
+                            <input type="checkbox" id="privacyToggle">
+                            <span class="slider"></span>
+                        </label>
                     </div>
                 </div>
             </div>

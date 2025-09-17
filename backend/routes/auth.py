@@ -94,7 +94,8 @@ def get_current_user():
         'phone': current_user.phone,
         'name': current_user.name,
         'avatar': current_user.avatar,
-        'is_online': current_user.is_online
+        'is_online': current_user.is_online,
+        'is_private': current_user.is_private
     }), 200
 
 @auth_bp.route('/update-profile', methods=['POST'])
@@ -102,12 +103,15 @@ def get_current_user():
 def update_profile():
     data = request.get_json()
     name = data.get('name')
+    is_private = data.get('is_private')
     
     if not name:
         return jsonify({'error': 'Name is required'}), 400
     
     try:
         current_user.name = name
+        if is_private is not None:
+            current_user.is_private = bool(is_private)
         db.session.commit()
     except Exception as e:
         db.session.rollback()
@@ -119,7 +123,8 @@ def update_profile():
             'id': current_user.id,
             'phone': current_user.phone,
             'name': current_user.name,
-            'avatar': current_user.avatar
+            'avatar': current_user.avatar,
+            'is_private': current_user.is_private
         }
     }), 200
 

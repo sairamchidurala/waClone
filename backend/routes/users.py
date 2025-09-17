@@ -14,7 +14,8 @@ def search_users():
     try:
         users = User.query.filter(
             (User.phone.like(f'%{query}%') | User.name.like(f'%{query}%')) &
-            (User.id != current_user.id)
+            (User.id != current_user.id) &
+            (User.is_private == False)
         ).limit(10).all()
     except Exception as e:
         return jsonify({'error': 'Search failed'}), 500
@@ -32,7 +33,7 @@ def search_users():
 def get_user_by_phone(phone):
     try:
         user = User.query.filter_by(phone=phone).first()
-        if not user or user.id == current_user.id:
+        if not user or user.id == current_user.id or user.is_private:
             return jsonify({'error': 'User not found'}), 404
     except Exception as e:
         return jsonify({'error': 'Database error'}), 500

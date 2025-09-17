@@ -66,6 +66,9 @@ class SettingsApp {
         document.getElementById('notificationToggle').addEventListener('change', this.toggleNotifications.bind(this));
         document.getElementById('soundToggle').addEventListener('change', this.toggleSound.bind(this));
         
+        // Privacy toggle
+        document.getElementById('privacyToggle').addEventListener('change', this.togglePrivacy.bind(this));
+        
         // Theme selector
         document.getElementById('themeSelect').addEventListener('change', this.changeTheme.bind(this));
     }
@@ -78,6 +81,11 @@ class SettingsApp {
         // Load notification settings
         document.getElementById('notificationToggle').checked = window.notificationManager.notificationEnabled;
         document.getElementById('soundToggle').checked = window.notificationManager.soundEnabled;
+        
+        // Load privacy setting (toggle ON = public, OFF = private)
+        const isPrivate = this.currentUser.is_private ?? true;
+        document.getElementById('privacyToggle').checked = !isPrivate;
+        this.updatePrivacyDisplay(!isPrivate);
         
         // Load theme setting
         const savedTheme = localStorage.getItem('theme') || 'light';
@@ -138,6 +146,50 @@ class SettingsApp {
     toggleSound() {
         const enabled = window.notificationManager.toggleSound();
         document.getElementById('soundToggle').checked = enabled;
+    }
+    
+    async togglePrivacy() {
+        const toggleChecked = document.getElementById('privacyToggle').checked;
+        const isPrivate = !toggleChecked; // Toggle ON = public, OFF = private
+        
+        // Show confirmation dialog
+        const message = toggleChecked 
+            ? 'Make your profile public? Others will be able to find you in search results.'
+            : 'Make your profile private? Others won\'t be able to find you in search results.';
+            
+        if (!confirm(message)) {
+            // Revert toggle if user cancels
+            document.getElementById('privacyToggle').checked = !toggleChecked;
+            return;
+        }
+        
+        try {
+            await api.updateProfile({ 
+                name: this.currentUser.name, 
+                is_private: isPrivate 
+            });
+            this.currentUser.is_private = isPrivate;
+            this.updatePrivacyDisplay(toggleChecked);
+        } catch (error) {
+            console.error('Failed to update privacy:', error);
+            // Revert toggle on error
+            document.getElementById('privacyToggle').checked = !toggleChecked;
+            this.showErrorMessage('Failed to update privacy setting');
+        }
+    }
+    
+    updatePrivacyDisplay(toggleOn) {
+        const label = document.getElementById('privacyLabel');
+        
+        if (toggleOn) {
+            // Toggle ON = Public
+            label.textContent = 'Public';
+            label.style.color = 'var(--green-primary)';
+        } else {
+            // Toggle OFF = Private
+            label.textContent = 'Private';
+            label.style.color = 'var(--text-secondary)';
+        }
     }
     
     changeTheme(e) {
