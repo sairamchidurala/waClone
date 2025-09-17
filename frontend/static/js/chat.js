@@ -51,7 +51,7 @@ class ChatApp {
         
         const settingsBtn = document.getElementById('settingsBtn');
         if (settingsBtn) settingsBtn.addEventListener('click', () => {
-            window.location.href = '/settings';
+            window.location.href = '/wa/settings';
         });
         
         const callHistoryBtn = document.getElementById('callHistoryBtn');

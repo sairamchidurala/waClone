@@ -24,7 +24,7 @@ class SettingsApp {
 
     setupEventListeners() {
         document.getElementById('backBtn').addEventListener('click', () => {
-            window.location.href = '/';
+            window.location.href = '/wa/';
         });
 
         document.getElementById('editProfileBtn').addEventListener('click', this.showEditModal.bind(this));

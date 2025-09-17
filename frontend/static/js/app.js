@@ -194,7 +194,7 @@ function formatFileSize(bytes) {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
-function showNotification(title, body, icon = '/static/images/logo.png') {
+function showNotification(title, body, icon = '/wa/static/images/logo.png') {
     if ('Notification' in window && Notification.permission === 'granted') {
         new Notification(title, { body, icon });
     }

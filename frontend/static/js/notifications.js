@@ -63,7 +63,7 @@ class NotificationManager {
         }
     }
 
-    showNotification(title, body, icon = '/static/images/logo.png') {
+    showNotification(title, body, icon = '/wa/static/images/logo.png') {
         if (!this.notificationEnabled) return;
 
         if ('Notification' in window && Notification.permission === 'granted') {
