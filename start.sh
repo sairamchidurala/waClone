@@ -14,5 +14,4 @@ python setup.py
 # Start application
 echo "🌐 Starting application..."
 echo "Access at: http://localhost:5001"
-echo "Demo login: +1234567890 / demo123"
 python app.py

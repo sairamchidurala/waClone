@@ -2,8 +2,7 @@
 
 # WhatsApp Clone Deploy Script
 # Syncs all files to EC2 instance
-
-SOURCE_DIR="/Users/sairamchidurala/MyCodes/repo/rtc_demo/whatsapp"
+SOURCE_DIR="$(pwd)"
 EC2_HOST="killer"
 DEPLOY_DIR="/disk1/deploy/whatsapp"
 
