@@ -3,9 +3,9 @@
 {% block title %}Settings - WhatsApp Clone{% endblock %}
 
 {% block content %}
-<div class="min-h-screen bg-gray-100">
+<div class="min-h-screen" style="background-color: var(--bg-primary);">
     <!-- Header -->
-    <div class="bg-green-600 text-white p-4 flex items-center">
+    <div class="text-white p-4 flex items-center" style="background-color: var(--green-primary);">
         <button id="backBtn" class="mr-4 p-2 hover:bg-green-700 rounded">
             <i class="fas fa-arrow-left"></i>
         </button>
@@ -13,14 +13,20 @@
     </div>
 
     <!-- Settings Content -->
-    <div class="max-w-2xl mx-auto bg-white">
+    <div class="max-w-2xl mx-auto" style="background-color: var(--bg-secondary);">
         <!-- Profile Section -->
-        <div class="p-6 border-b">
+        <div class="p-6" style="border-bottom: 1px solid var(--border-color);">
             <div class="flex items-center mb-4">
-                <img id="profileAvatar" src="https://ui-avatars.com/api/?name=User&background=25d366&color=fff&size=80" class="w-20 h-20 rounded-full mr-4">
+                <div class="relative">
+                    <img id="profileAvatar" src="https://ui-avatars.com/api/?name=User&background=25d366&color=fff&size=80" class="w-20 h-20 rounded-full mr-4 cursor-pointer hover:opacity-80 transition-opacity">
+                    <button id="changeAvatarBtn" class="absolute bottom-0 right-2 bg-green-600 text-white p-1 rounded-full hover:bg-green-700 transition-colors">
+                        <i class="fas fa-camera text-xs"></i>
+                    </button>
+                    <input type="file" id="avatarInput" class="hidden" accept="image/*">
+                </div>
                 <div class="flex-1">
-                    <h2 id="profileName" class="text-xl font-semibold">Loading...</h2>
-                    <p id="profilePhone" class="text-gray-500">Loading...</p>
+                    <h2 id="profileName" class="text-xl font-semibold" style="color: var(--text-primary);">Loading...</h2>
+                    <p id="profilePhone" style="color: var(--text-secondary);">Loading...</p>
                 </div>
                 <button id="editProfileBtn" class="text-green-600 hover:text-green-700">
                     <i class="fas fa-edit text-xl"></i>
@@ -31,24 +37,24 @@
         <!-- Settings Options -->
         <div class="divide-y">
             <!-- Account -->
-            <div class="p-4 hover:bg-gray-50 cursor-pointer" id="accountSettings">
+            <div class="p-4 cursor-pointer transition-colors" id="accountSettings" style="hover:background-color: var(--bg-tertiary);">
                 <div class="flex items-center">
-                    <i class="fas fa-user text-gray-500 w-6"></i>
+                    <i class="fas fa-user w-6" style="color: var(--text-secondary);"></i>
                     <div class="ml-4">
-                        <div class="font-medium">Account</div>
-                        <div class="text-sm text-gray-500">Privacy, security, change number</div>
+                        <div class="font-medium" style="color: var(--text-primary);">Account</div>
+                        <div class="text-sm" style="color: var(--text-secondary);">Privacy, security, change number</div>
                     </div>
                 </div>
             </div>
 
             <!-- Notifications -->
-            <div class="p-4 hover:bg-gray-50" id="notificationSettings">
+            <div class="p-4 transition-colors" id="notificationSettings" style="hover:background-color: var(--bg-tertiary);">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center">
-                        <i class="fas fa-bell text-gray-500 w-6"></i>
+                        <i class="fas fa-bell w-6" style="color: var(--text-secondary);"></i>
                         <div class="ml-4">
-                            <div class="font-medium">Notifications</div>
-                            <div class="text-sm text-gray-500">Message & call notifications</div>
+                            <div class="font-medium" style="color: var(--text-primary);">Notifications</div>
+                            <div class="text-sm" style="color: var(--text-secondary);">Message & call notifications</div>
                         </div>
                     </div>
                     <label class="relative inline-flex items-center cursor-pointer">
@@ -58,7 +64,7 @@
                 </div>
                 <div class="mt-3 ml-10">
                     <div class="flex items-center justify-between">
-                        <span class="text-sm text-gray-600">Sound</span>
+                        <span class="text-sm" style="color: var(--text-secondary);">Sound</span>
                         <label class="relative inline-flex items-center cursor-pointer">
                             <input type="checkbox" id="soundToggle" class="sr-only peer" checked>
                             <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
@@ -68,16 +74,16 @@
             </div>
 
             <!-- Theme -->
-            <div class="p-4 hover:bg-gray-50" id="themeSettings">
+            <div class="p-4 transition-colors" id="themeSettings" style="hover:background-color: var(--bg-tertiary);">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center">
-                        <i class="fas fa-palette text-gray-500 w-6"></i>
+                        <i class="fas fa-palette w-6" style="color: var(--text-secondary);"></i>
                         <div class="ml-4">
-                            <div class="font-medium">Theme</div>
-                            <div class="text-sm text-gray-500">Light or dark mode</div>
+                            <div class="font-medium" style="color: var(--text-primary);">Theme</div>
+                            <div class="text-sm" style="color: var(--text-secondary);">Light or dark mode</div>
                         </div>
                     </div>
-                    <select id="themeSelect" class="border rounded px-2 py-1 text-sm">
+                    <select id="themeSelect" class="rounded px-2 py-1 text-sm transition-colors" style="background-color: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-primary);">
                         <option value="light">Light</option>
                         <option value="dark">Dark</option>
                         <option value="auto">Auto</option>
@@ -85,30 +91,32 @@
                 </div>
             </div>
             
+
+            
             <!-- Status -->
-            <div class="p-4 hover:bg-gray-50 cursor-pointer" id="statusSettings">
+            <div class="p-4 cursor-pointer transition-colors" id="statusSettings" style="hover:background-color: var(--bg-tertiary);">
                 <div class="flex items-center">
-                    <i class="fas fa-info-circle text-gray-500 w-6"></i>
+                    <i class="fas fa-info-circle w-6" style="color: var(--text-secondary);"></i>
                     <div class="ml-4">
-                        <div class="font-medium">Status</div>
-                        <div class="text-sm text-gray-500">Set your status message</div>
+                        <div class="font-medium" style="color: var(--text-primary);">Status</div>
+                        <div class="text-sm" style="color: var(--text-secondary);">Set your status message</div>
                     </div>
                 </div>
             </div>
 
             <!-- Help -->
-            <div class="p-4 hover:bg-gray-50 cursor-pointer" id="helpSettings">
+            <div class="p-4 cursor-pointer transition-colors" id="helpSettings" style="hover:background-color: var(--bg-tertiary);">
                 <div class="flex items-center">
-                    <i class="fas fa-question-circle text-gray-500 w-6"></i>
+                    <i class="fas fa-question-circle w-6" style="color: var(--text-secondary);"></i>
                     <div class="ml-4">
-                        <div class="font-medium">Help</div>
-                        <div class="text-sm text-gray-500">Help center, contact us, privacy policy</div>
+                        <div class="font-medium" style="color: var(--text-primary);">Help</div>
+                        <div class="text-sm" style="color: var(--text-secondary);">Help center, contact us, privacy policy</div>
                     </div>
                 </div>
             </div>
 
             <!-- Logout -->
-            <div class="p-4 hover:bg-gray-50 cursor-pointer" id="logoutBtn">
+            <div class="p-4 cursor-pointer transition-colors" id="logoutBtn" style="hover:background-color: var(--bg-tertiary);">
                 <div class="flex items-center text-red-600">
                     <i class="fas fa-sign-out-alt w-6"></i>
                     <div class="ml-4 font-medium">Logout</div>
@@ -120,7 +128,7 @@
 
 <!-- Edit Profile Modal -->
 <div id="editProfileModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
-    <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+    <div class="rounded-lg p-6 max-w-md w-full mx-4" style="background-color: var(--bg-secondary); box-shadow: 0 10px 25px var(--shadow);">
         <div class="flex justify-between items-center mb-4">
             <h3 class="text-lg font-semibold">Edit Profile</h3>
             <button id="closeEditBtn" class="text-gray-500 hover:text-gray-700">
@@ -143,6 +151,54 @@
         </form>
     </div>
 </div>
+
+<!-- Profile Picture Viewer -->
+<div id="profileViewModal" class="fixed inset-0 bg-black bg-opacity-90 hidden items-center justify-center z-50">
+    <div class="relative max-w-lg w-full mx-4">
+        <button id="closeProfileViewBtn" class="absolute top-4 right-4 text-white hover:text-gray-300 z-10">
+            <i class="fas fa-times text-2xl"></i>
+        </button>
+        <img id="profileViewImage" class="w-full h-auto rounded-lg shadow-2xl">
+        <div class="text-center mt-4">
+            <h3 id="profileViewName" class="text-white text-xl font-semibold"></h3>
+        </div>
+    </div>
+</div>
+
+<!-- Image Crop Modal -->
+<div id="cropModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="rounded-lg p-6 max-w-md w-full mx-4" style="background-color: var(--bg-secondary); box-shadow: 0 10px 25px var(--shadow);">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-semibold" style="color: var(--text-primary);">Crop Profile Picture</h3>
+            <button id="closeCropBtn" class="transition-colors" style="color: var(--text-secondary);">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="space-y-4">
+            <div class="relative bg-gray-100 rounded-lg overflow-hidden" style="background-color: var(--bg-tertiary);">
+                <canvas id="cropCanvas" class="max-w-full max-h-64 mx-auto block cursor-grab"></canvas>
+                <div id="cropOverlay" class="absolute inset-0 pointer-events-none">
+                    <div class="absolute border-2 border-green-500 bg-transparent" id="cropBox" style="width: 150px; height: 150px; top: 50%; left: 50%; transform: translate(-50%, -50%);"></div>
+                </div>
+            </div>
+            <div class="flex items-center justify-center space-x-4 mt-2">
+                <button id="zoomOutBtn" class="p-2 rounded transition-colors" style="background-color: var(--bg-tertiary); color: var(--text-primary);">
+                    <i class="fas fa-search-minus"></i>
+                </button>
+                <span class="text-sm" style="color: var(--text-secondary);">Drag to move • Scroll to zoom</span>
+                <button id="zoomInBtn" class="p-2 rounded transition-colors" style="background-color: var(--bg-tertiary); color: var(--text-primary);">
+                    <i class="fas fa-search-plus"></i>
+                </button>
+            </div>
+            <div class="flex space-x-2">
+                <button id="cancelCropBtn" class="flex-1 p-2 rounded-lg transition-colors" style="background-color: var(--bg-tertiary); color: var(--text-primary);">Cancel</button>
+                <button id="applyCropBtn" class="flex-1 p-2 text-white rounded-lg transition-colors" style="background-color: var(--green-primary);">Apply</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
 {% endblock %}
 
 {% block scripts %}

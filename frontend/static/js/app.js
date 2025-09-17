@@ -168,22 +168,42 @@ class WhatsAppAPI {
         });
     }
 
+    async uploadProfilePicture(file) {
+        const formData = new FormData();
+        formData.append('avatar', file);
+        return this.request('/api/auth/upload-avatar', {
+            method: 'POST',
+            headers: {},
+            body: formData
+        });
+    }
+
 
 }
 
 // Utility functions
 function formatTime(timestamp) {
-    // Timestamp is already in IST from backend
-    const date = new Date(timestamp);
+    // Convert UTC timestamp to IST (add 5.5 hours)
+    const utcDate = new Date(timestamp);
+    const istDate = new Date(utcDate.getTime() + (5.5 * 60 * 60 * 1000));
     const now = new Date();
-    const diff = now - date;
+    const diff = now - istDate;
 
     if (diff < 24 * 60 * 60 * 1000) {
-        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        return istDate.toLocaleTimeString('en-IN', { 
+            hour: '2-digit', 
+            minute: '2-digit',
+            hour12: true
+        });
     } else if (diff < 7 * 24 * 60 * 60 * 1000) {
-        return date.toLocaleDateString([], { weekday: 'short' });
+        return istDate.toLocaleDateString('en-IN', { 
+            weekday: 'short'
+        });
     } else {
-        return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+        return istDate.toLocaleDateString('en-IN', { 
+            month: 'short', 
+            day: 'numeric'
+        });
     }
 }
 
@@ -208,6 +228,44 @@ function requestNotificationPermission() {
 }
 
 // Initialize API instance
+window.api = new WhatsAppAPI();
+
+// Theme management
+class ThemeManager {
+    constructor() {
+        this.init();
+    }
+    
+    init() {
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        this.applyTheme(savedTheme);
+        
+        // Listen for system theme changes
+        if (savedTheme === 'auto') {
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+                if (localStorage.getItem('theme') === 'auto') {
+                    this.applyTheme('auto');
+                }
+            });
+        }
+    }
+    
+    applyTheme(theme) {
+        const body = document.body;
+        
+        if (theme === 'dark') {
+            body.setAttribute('data-theme', 'dark');
+        } else if (theme === 'auto') {
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            body.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
+        } else {
+            body.removeAttribute('data-theme');
+        }
+    }
+}
+
+// Initialize theme and API
+window.themeManager = new ThemeManager();
 window.api = new WhatsAppAPI();
 
 // Request notification permission on load

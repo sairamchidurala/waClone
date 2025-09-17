@@ -11,6 +11,21 @@
 <body class="bg-gray-100">
     {% block content %}{% endblock %}
     
+    <script>
+        // Apply saved theme on page load
+        (function() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            const body = document.body;
+            
+            if (savedTheme === 'dark') {
+                body.setAttribute('data-theme', 'dark');
+            } else if (savedTheme === 'auto') {
+                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                body.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
+            }
+        })();
+    </script>
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
     <script src="/wa/static/js/avatar.js"></script>
     <script src="/wa/static/js/notifications.js"></script>

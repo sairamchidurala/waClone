@@ -9,6 +9,10 @@ class ChatApp {
         this.peerConnection = null;
         this.localStream = null;
         this.remoteStream = null;
+        this.mediaRecorder = null;
+        this.recordedChunks = [];
+        this.recordingTimer = null;
+        this.recordingStartTime = null;
         
         this.init();
     }
@@ -125,6 +129,16 @@ class ChatApp {
         if (startChatBtn) startChatBtn.addEventListener('click', this.startNewChat.bind(this));
         if (newChatPhone) newChatPhone.addEventListener('input', this.searchUsers.bind(this));
         
+        // Voice recording
+        const voiceBtn = document.getElementById('voiceBtn');
+        const cancelVoiceBtn = document.getElementById('cancelVoiceBtn');
+        const recordVoiceBtn = document.getElementById('recordVoiceBtn');
+        const sendVoiceBtn = document.getElementById('sendVoiceBtn');
+        if (voiceBtn) voiceBtn.addEventListener('click', this.showVoiceModal.bind(this));
+        if (cancelVoiceBtn) cancelVoiceBtn.addEventListener('click', this.hideVoiceModal.bind(this));
+        if (recordVoiceBtn) recordVoiceBtn.addEventListener('click', this.toggleVoiceRecording.bind(this));
+        if (sendVoiceBtn) sendVoiceBtn.addEventListener('click', this.sendVoiceMessage.bind(this));
+        
         // ESC key handlers
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
@@ -193,7 +207,7 @@ class ChatApp {
 
     updateUserInfo() {
         document.getElementById('userName').textContent = this.currentUser.name;
-        setAvatar(document.getElementById('userAvatar'), this.currentUser.name, 40);
+        setAvatar(document.getElementById('userAvatar'), this.currentUser.name, 40, this.currentUser.avatar);
     }
 
     async loadContacts() {
@@ -217,7 +231,7 @@ class ChatApp {
             
             const avatarImg = document.createElement('img');
             avatarImg.className = 'w-12 h-12 rounded-full';
-            setAvatar(avatarImg, contact.name, 48);
+            setAvatar(avatarImg, contact.name, 48, contact.avatar);
             
             const avatarContainer = document.createElement('div');
             avatarContainer.className = 'relative';
@@ -288,6 +302,9 @@ class ChatApp {
     async selectContact(contact) {
         this.selectedContact = contact;
         
+        // Close call history if open
+        this.showChatArea();
+        
         // Mobile: Hide sidebar and show chat
         if (window.innerWidth <= 768) {
             document.body.classList.add('mobile-chat-open');
@@ -308,10 +325,12 @@ class ChatApp {
         // Update chat header
         document.getElementById('chatName').textContent = contact.name;
         document.getElementById('chatStatus').textContent = contact.is_online ? 'Online' : `Last seen ${formatTime(contact.last_seen)}`;
-        setAvatar(document.getElementById('chatAvatar'), contact.name, 40);
+        setAvatar(document.getElementById('chatAvatar'), contact.name, 40, contact.avatar);
         
         // Load conversation
         await this.loadConversation(contact.id);
+        
+
         
         // Mark unread messages as read
         this.markUnreadMessagesAsRead();
@@ -462,14 +481,31 @@ class ChatApp {
             const secureUrl = `/wa/api/messages/media/${message.secure_file_id || message.id}`;
             const audioDiv = document.createElement('div');
             audioDiv.className = 'audio-message';
+            
+            // Voice message indicator
+            const voiceIcon = document.createElement('div');
+            voiceIcon.className = 'flex items-center mr-2';
+            voiceIcon.innerHTML = '<i class="fas fa-microphone text-green-600 mr-2"></i>';
+            
             const audio = document.createElement('audio');
             audio.controls = true;
             audio.preload = 'none';
-            const source = document.createElement('source');
-            source.src = secureUrl;
-            source.type = 'audio/mpeg';
-            audio.appendChild(source);
+            audio.className = 'flex-1';
+            
+            // Support multiple audio formats
+            const webmSource = document.createElement('source');
+            webmSource.src = secureUrl;
+            webmSource.type = 'audio/webm';
+            audio.appendChild(webmSource);
+            
+            const mp3Source = document.createElement('source');
+            mp3Source.src = secureUrl;
+            mp3Source.type = 'audio/mpeg';
+            audio.appendChild(mp3Source);
+            
+            audioDiv.appendChild(voiceIcon);
             audioDiv.appendChild(audio);
+            
             if (message.content && !message.content.startsWith('Sent a')) {
                 const captionDiv = document.createElement('div');
                 captionDiv.className = 'mt-2 text-sm';
@@ -910,7 +946,7 @@ class ChatApp {
                 userDiv.className = 'flex items-center p-2 hover:bg-gray-100 cursor-pointer rounded';
                 const userAvatar = document.createElement('img');
                 userAvatar.className = 'w-8 h-8 rounded-full mr-3';
-                setAvatar(userAvatar, user.name, 32);
+                setAvatar(userAvatar, user.name, 32, user.avatar);
                 
                 const userInfo = document.createElement('div');
                 
@@ -1146,7 +1182,11 @@ class ChatApp {
         
         calls.forEach(call => {
             const callDiv = document.createElement('div');
-            callDiv.className = 'flex items-center p-3 border-b hover:bg-gray-50';
+            callDiv.className = 'flex items-center p-3 transition-colors';
+            callDiv.style.borderBottom = '1px solid var(--border-color)';
+            callDiv.style.color = 'var(--text-primary)';
+            callDiv.onmouseover = () => callDiv.style.backgroundColor = 'var(--bg-tertiary)';
+            callDiv.onmouseout = () => callDiv.style.backgroundColor = 'transparent';
             
             const isIncoming = call.receiver.id === this.currentUser.id;
             const contact = isIncoming ? call.caller : call.receiver;
@@ -1163,20 +1203,26 @@ class ChatApp {
             const nameDiv = document.createElement('div');
             nameDiv.className = 'font-semibold';
             nameDiv.textContent = contact.name;
+            nameDiv.style.color = 'var(--text-primary)';
             
             const detailsDiv = document.createElement('div');
-            detailsDiv.className = 'text-sm text-gray-500';
+            detailsDiv.className = 'text-sm';
+            detailsDiv.style.color = 'var(--text-secondary)';
             detailsDiv.innerHTML = `
                 <i class="${statusIcon} mr-1"></i>
                 ${isIncoming ? 'Incoming' : 'Outgoing'} ${call.call_type} call
             `;
             
             const timeDiv = document.createElement('div');
-            timeDiv.className = 'text-xs text-gray-400';
+            timeDiv.className = 'text-xs';
+            timeDiv.style.color = 'var(--text-secondary)';
             timeDiv.textContent = formatTime(call.started_at);
             
             const callBtn = document.createElement('button');
-            callBtn.className = 'p-2 text-green-600 hover:bg-green-100 rounded';
+            callBtn.className = 'p-2 rounded transition-colors';
+            callBtn.style.color = 'var(--green-primary)';
+            callBtn.onmouseover = () => callBtn.style.backgroundColor = 'var(--bg-primary)';
+            callBtn.onmouseout = () => callBtn.style.backgroundColor = 'transparent';
             callBtn.innerHTML = '<i class="fas fa-phone"></i>';
             callBtn.onclick = () => this.callFromHistory(contact);
             
@@ -1267,6 +1313,106 @@ class ChatApp {
             utterance.pitch = 1;
             utterance.volume = 0.8;
             speechSynthesis.speak(utterance);
+        }
+    }
+
+    showVoiceModal() {
+        if (!this.selectedContact) return;
+        document.getElementById('voiceRecordModal').classList.remove('hidden');
+        document.getElementById('voiceRecordModal').classList.add('flex');
+    }
+    
+    hideVoiceModal() {
+        document.getElementById('voiceRecordModal').classList.add('hidden');
+        document.getElementById('voiceRecordModal').classList.remove('flex');
+        this.stopRecording();
+    }
+    
+    async toggleVoiceRecording() {
+        if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
+            this.stopRecording();
+        } else {
+            await this.startRecording();
+        }
+    }
+    
+    async startRecording() {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            this.mediaRecorder = new MediaRecorder(stream);
+            this.recordedChunks = [];
+            
+            this.mediaRecorder.ondataavailable = (event) => {
+                if (event.data.size > 0) {
+                    this.recordedChunks.push(event.data);
+                }
+            };
+            
+            this.mediaRecorder.start();
+            this.recordingStartTime = Date.now();
+            
+            // Update UI
+            document.getElementById('recordVoiceBtn').innerHTML = '<i class="fas fa-stop"></i> Stop';
+            document.getElementById('recordingStatus').textContent = 'Recording...';
+            document.getElementById('recordingIndicator').style.animation = 'pulse 1s infinite';
+            
+            // Start timer
+            this.recordingTimer = setInterval(() => {
+                const elapsed = Math.floor((Date.now() - this.recordingStartTime) / 1000);
+                const minutes = Math.floor(elapsed / 60).toString().padStart(2, '0');
+                const seconds = (elapsed % 60).toString().padStart(2, '0');
+                document.getElementById('recordingTime').textContent = `${minutes}:${seconds}`;
+            }, 1000);
+            
+        } catch (error) {
+            console.error('Failed to start recording:', error);
+            alert('Microphone access denied');
+        }
+    }
+    
+    stopRecording() {
+        if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
+            this.mediaRecorder.stop();
+            this.mediaRecorder.stream.getTracks().forEach(track => track.stop());
+            
+            // Update UI
+            document.getElementById('recordVoiceBtn').innerHTML = '<i class="fas fa-circle"></i> Record';
+            document.getElementById('recordVoiceBtn').classList.add('hidden');
+            document.getElementById('sendVoiceBtn').classList.remove('hidden');
+            document.getElementById('recordingStatus').textContent = 'Recording complete';
+            document.getElementById('recordingIndicator').style.animation = 'none';
+            
+            // Clear timer
+            if (this.recordingTimer) {
+                clearInterval(this.recordingTimer);
+                this.recordingTimer = null;
+            }
+        }
+    }
+    
+    async sendVoiceMessage() {
+        if (this.recordedChunks.length === 0 || !this.selectedContact) return;
+        
+        const audioBlob = new Blob(this.recordedChunks, { type: 'audio/webm' });
+        const audioFile = new File([audioBlob], 'voice_message.webm', { type: 'audio/webm' });
+        
+        try {
+            await api.sendMedia(this.selectedContact.id, audioFile, '');
+            this.hideVoiceModal();
+            
+            // Reset recording state
+            this.recordedChunks = [];
+            document.getElementById('recordVoiceBtn').classList.remove('hidden');
+            document.getElementById('sendVoiceBtn').classList.add('hidden');
+            document.getElementById('recordingTime').textContent = '00:00';
+            document.getElementById('recordingStatus').textContent = 'Tap to start recording';
+            
+            // Reload conversation to show new message
+            await this.loadConversation(this.selectedContact.id);
+            
+        } catch (error) {
+            console.error('Failed to send voice message:', error);
+            alert('Failed to send voice message');
         }
     }
 

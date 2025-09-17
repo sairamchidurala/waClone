@@ -10,7 +10,7 @@ import os
 
 messages_bp = Blueprint('messages', __name__)
 
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'mp4', 'mp3', 'wav'}
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'mp4', 'mp3', 'wav', 'webm', 'ogg'}
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -62,12 +62,10 @@ def send_message():
         db.session.rollback()
         return jsonify({'error': 'Failed to send message'}), 500
     
-    # Convert to IST
-    ist_timestamp = message.timestamp.replace(tzinfo=None) + timedelta(hours=5, minutes=30)
     return jsonify({
         'id': message.id,
         'content': content,  # Return original content, not encrypted
-        'timestamp': ist_timestamp.isoformat(),
+        'timestamp': message.timestamp.isoformat(),
         'sender_id': message.sender_id
     }), 201
 
@@ -94,10 +92,15 @@ def send_media():
     except (ValueError, TypeError):
         return jsonify({'error': 'Invalid receiver ID'}), 400
     
-    if file and allowed_file(file.filename):
-        filename = secure_filename(file.filename)
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_')
-        filename = timestamp + filename
+    # Handle files without extension (like voice messages)
+    if file and (allowed_file(file.filename) or file.filename == 'voice_message.webm'):
+        # Handle voice messages and other files
+        if file.filename == 'voice_message.webm':
+            filename = f"voice_{datetime.now().strftime('%Y%m%d_%H%M%S')}.webm"
+        else:
+            filename = secure_filename(file.filename)
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_')
+            filename = timestamp + filename
         file_path = os.path.join('uploads', filename)
         file.save(file_path)
         
@@ -109,14 +112,14 @@ def send_media():
         elif ext in ['mp4']:
             message_type = 'video'
             telegram_type = 'video'
-        elif ext in ['mp3', 'wav']:
+        elif ext in ['mp3', 'wav', 'webm', 'ogg']:
             message_type = 'audio'
             telegram_type = 'document'
         else:
             message_type = 'file'
             telegram_type = 'document'
         
-        # Upload to Telegram (optional)
+        # Upload to Telegram (prioritize Telegram storage)
         telegram_file_id = None
         telegram_file_url = None
         
@@ -125,15 +128,20 @@ def send_media():
                 telegram_result = telegram_storage.upload_file(file_path, telegram_type)
                 if telegram_result:
                     telegram_file_id, telegram_file_url = telegram_result
-                    # Delete local file after successful upload
+                    # Delete local file after successful upload to save space
                     try:
                         os.remove(file_path)
                         file_path = None
                     except OSError:
                         pass
-            except Exception:
-                # Continue without Telegram storage if it fails
+                else:
+                    print(f"Telegram upload failed for {file_path}")
+            except Exception as e:
+                print(f"Telegram storage error: {e}")
+                # Continue with local storage if Telegram fails
                 pass
+        else:
+            print("Telegram storage not configured, using local storage")
         
         content = caption if caption else f"Sent a {message_type}"
         message = Message(
@@ -149,14 +157,12 @@ def send_media():
         db.session.commit()
         
         # Return secure response without exposing URLs
-        # Convert to IST
-        ist_timestamp = message.timestamp.replace(tzinfo=None) + timedelta(hours=5, minutes=30)
         return jsonify({
             'id': message.id,
             'content': message.content,
             'message_type': message.message_type,
             'secure_file_id': message.id,  # Use message ID as secure identifier
-            'timestamp': ist_timestamp.isoformat()
+            'timestamp': message.timestamp.isoformat()
         }), 201
     
     return jsonify({'error': 'Invalid file type'}), 400
@@ -193,13 +199,11 @@ def get_conversation(encrypted_token):
     decrypted_messages = []
     for msg in messages:
         decrypted_content = message_encryption.decrypt_message(msg.content) if msg.message_type == 'text' else msg.content
-        # Convert to IST
-        ist_timestamp = msg.timestamp.replace(tzinfo=None) + timedelta(hours=5, minutes=30)
         message_data = {
             'id': msg.id,
             'content': decrypted_content,
             'message_type': msg.message_type,
-            'timestamp': ist_timestamp.isoformat(),
+            'timestamp': msg.timestamp.isoformat(),
             'sender_id': msg.sender_id,
             'is_read': msg.is_read,
             'is_delivered': getattr(msg, 'is_delivered', False)
@@ -239,17 +243,13 @@ def get_contacts():
     
     contact_list = []
     for user in contacts:
-        last_seen_ist = None
-        if user.last_seen:
-            last_seen_ist = (user.last_seen.replace(tzinfo=None) + timedelta(hours=5, minutes=30)).isoformat()
-        
         contact_list.append({
             'id': user.id,
             'name': user.name,
             'phone': user.phone,
             'avatar': user.avatar,
             'is_online': user.is_online,
-            'last_seen': last_seen_ist
+            'last_seen': user.last_seen.isoformat() if user.last_seen else None
         })
     
     return jsonify(contact_list), 200

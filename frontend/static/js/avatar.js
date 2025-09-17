@@ -22,9 +22,17 @@ function generateAvatar(name, size = 40) {
     return canvas.toDataURL();
 }
 
-// Replace avatar URLs with local generation
-function setAvatar(element, name, size = 40) {
+// Set avatar with custom image or generated fallback
+function setAvatar(element, name, size = 40, customAvatar = null) {
     if (element) {
-        element.src = generateAvatar(name, size);
+        if (customAvatar) {
+            element.src = customAvatar;
+            element.onerror = () => {
+                // Fallback to generated avatar if custom image fails to load
+                element.src = generateAvatar(name, size);
+            };
+        } else {
+            element.src = generateAvatar(name, size);
+        }
     }
 }
