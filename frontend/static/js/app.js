@@ -174,15 +174,17 @@ class WhatsAppAPI {
 // Utility functions
 function formatTime(timestamp) {
     const date = new Date(timestamp);
+    // Convert to IST (UTC+5:30)
+    const istDate = new Date(date.getTime() + (5.5 * 60 * 60 * 1000));
     const now = new Date();
-    const diff = now - date;
+    const diff = now - istDate;
 
     if (diff < 24 * 60 * 60 * 1000) {
-        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        return istDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     } else if (diff < 7 * 24 * 60 * 60 * 1000) {
-        return date.toLocaleDateString([], { weekday: 'short' });
+        return istDate.toLocaleDateString([], { weekday: 'short' });
     } else {
-        return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+        return istDate.toLocaleDateString([], { month: 'short', day: 'numeric' });
     }
 }
 

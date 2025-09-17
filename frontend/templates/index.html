@@ -56,6 +56,9 @@ if (!user) {
         <div id="chatHeader" class="bg-gray-200 p-4 border-b hidden">
             <div class="flex items-center justify-between">
                 <div class="flex items-center">
+                    <button id="backToChatListBtn" class="p-2 hover:bg-gray-300 rounded mr-2">
+                        <i class="fas fa-arrow-left text-gray-600"></i>
+                    </button>
                     <img id="chatAvatar" src="https://ui-avatars.com/api/?name=Contact&background=25d366&color=fff&size=40" class="w-10 h-10 rounded-full mr-3">
                     <div>
                         <div id="chatName" class="font-semibold"></div>
@@ -176,6 +179,51 @@ if (!user) {
         </div>
     </div>
 </div>
+
+<!-- Call Screen -->
+<div id="call-screen" class="fixed inset-0 bg-black hidden z-50">
+    <div class="h-full flex flex-col">
+        <div class="flex-1 relative">
+            <video id="remote-video" class="w-full h-full object-cover" autoplay></video>
+            <video id="local-video" class="absolute top-4 right-4 w-32 h-24 object-cover rounded-lg border-2 border-white" autoplay muted></video>
+        </div>
+        <div class="bg-black bg-opacity-50 p-6">
+            <div class="flex justify-center space-x-4">
+                <button id="mute-audio-btn" class="bg-gray-600 text-white p-4 rounded-full hover:bg-gray-700">
+                    🎤
+                </button>
+                <button id="mute-video-btn" class="bg-gray-600 text-white p-4 rounded-full hover:bg-gray-700">
+                    📹
+                </button>
+                <button id="switch-to-audio-btn" class="bg-green-600 text-white p-4 rounded-full hover:bg-green-700">
+                    📞
+                </button>
+                <button id="end-call-btn" class="bg-red-600 text-white p-4 rounded-full hover:bg-red-700">
+                    ❌
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Incoming Call Popup -->
+<div id="incoming-call-popup" class="fixed top-4 right-4 bg-white rounded-lg shadow-2xl p-6 w-80 hidden z-50 border">
+    <div class="text-center">
+        <div class="flex items-center justify-center mb-3">
+            <i id="call-type-icon" class="fas fa-video text-2xl text-blue-500 mr-2"></i>
+            <h3 class="text-lg font-semibold">Incoming <span id="call-type-text">Video</span> Call</h3>
+        </div>
+        <p id="caller-name" class="text-lg mb-4 text-gray-700">Unknown Caller</p>
+        <div class="flex justify-center space-x-4">
+            <button id="reject-call-btn" class="bg-red-500 text-white p-3 rounded-full hover:bg-red-600 transition-colors">
+                <i class="fas fa-phone-slash"></i>
+            </button>
+            <button id="accept-call-btn" class="bg-green-500 text-white p-3 rounded-full hover:bg-green-600 transition-colors">
+                <i class="fas fa-phone"></i>
+            </button>
+        </div>
+    </div>
+</div>
         `;
     });
 }
@@ -183,5 +231,6 @@ if (!user) {
 {% endblock %}
 
 {% block scripts %}
+<script src="/wa/static/js/webrtc.js"></script>
 <script src="/wa/static/js/chat.js"></script>
 {% endblock %}

@@ -87,6 +87,27 @@ class ChatApp {
         if (audioCallBtn) audioCallBtn.addEventListener('click', () => this.initiateCall('audio'));
         if (videoCallBtn) videoCallBtn.addEventListener('click', () => this.initiateCall('video'));
         
+        // WebRTC call controls
+        const acceptCallBtn = document.getElementById('accept-call-btn');
+        const rejectCallBtn = document.getElementById('reject-call-btn');
+        const endCallBtn2 = document.getElementById('end-call-btn');
+        const muteAudioBtn = document.getElementById('mute-audio-btn');
+        const muteVideoBtn = document.getElementById('mute-video-btn');
+        
+        if (acceptCallBtn) acceptCallBtn.addEventListener('click', this.answerCall.bind(this));
+        if (rejectCallBtn) rejectCallBtn.addEventListener('click', this.rejectCall.bind(this));
+        if (endCallBtn2) endCallBtn2.addEventListener('click', this.endCall.bind(this));
+        if (muteAudioBtn) muteAudioBtn.addEventListener('click', () => window.webrtc.toggleAudio());
+        if (muteVideoBtn) muteVideoBtn.addEventListener('click', () => window.webrtc.toggleVideo());
+        
+        // Switch call type buttons
+        const switchToAudioBtn = document.getElementById('switch-to-audio-btn');
+        if (switchToAudioBtn) switchToAudioBtn.addEventListener('click', () => window.webrtc.switchToAudio());
+        
+        // Back to chat list button
+        const backToChatListBtn = document.getElementById('backToChatListBtn');
+        if (backToChatListBtn) backToChatListBtn.addEventListener('click', this.closeChat.bind(this));
+        
         const endCallBtn = document.getElementById('endCallBtn');
         const answerCallBtn = document.getElementById('answerCallBtn');
         if (endCallBtn) endCallBtn.addEventListener('click', this.endCall.bind(this));
@@ -103,6 +124,22 @@ class ChatApp {
         if (closeNewChatBtn) closeNewChatBtn.addEventListener('click', this.hideNewChatModal.bind(this));
         if (startChatBtn) startChatBtn.addEventListener('click', this.startNewChat.bind(this));
         if (newChatPhone) newChatPhone.addEventListener('input', this.searchUsers.bind(this));
+        
+        // ESC key handlers
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                const callHistoryArea = document.getElementById('callHistoryArea');
+                const incomingCallPopup = document.getElementById('incoming-call-popup');
+                
+                if (callHistoryArea && !callHistoryArea.classList.contains('hidden')) {
+                    this.showChatArea();
+                } else if (incomingCallPopup && !incomingCallPopup.classList.contains('hidden')) {
+                    this.rejectCall();
+                } else if (this.selectedContact) {
+                    this.closeChat();
+                }
+            }
+        });
     }
 
     setupSocketListeners() {
@@ -571,32 +608,7 @@ class ChatApp {
         if (!this.selectedContact) return;
         
         try {
-            const call = await api.initiateCall(this.selectedContact.id, callType);
-            this.currentCall = call;
-            this.showCallModal(call, 'outgoing');
-            
-            // Set call timeout for missed call
-            this.callTimeout = setTimeout(() => {
-                if (this.currentCall && this.currentCall.call_id === call.call_id) {
-                    this.endCall();
-                }
-            }, 30000);
-            
-            // Direct socket emit to receiver
-            console.log('Emitting call to user:', this.selectedContact.id);
-            api.socket.emit('call_signal', {
-                type: 'call_initiated',
-                call: {
-                    ...call,
-                    caller: {
-                        id: this.currentUser.id,
-                        name: this.currentUser.name,
-                        phone: this.currentUser.phone
-                    }
-                },
-                receiver_id: this.selectedContact.id
-            });
-            
+            await window.webrtc.startCall(this.selectedContact.id, callType);
         } catch (error) {
             console.error('Failed to initiate call:', error);
             this.showErrorMessage('Call failed: ' + error.message);
@@ -650,86 +662,36 @@ class ChatApp {
     }
 
     async answerCall() {
-        if (!this.currentCall) return;
+        const popup = document.getElementById('incoming-call-popup');
+        const callId = popup?.dataset.callId;
+        const callType = popup?.dataset.callType || 'video';
         
-        try {
-            await api.answerCall(this.currentCall.call_id);
-            
-            document.getElementById('callStatus').textContent = 'Connected';
-            document.getElementById('answerCallBtn').classList.add('hidden');
-            
-            // Emit answer signal
-            const callerId = this.currentCall.caller_id || this.currentCall.caller?.id;
-            console.log('Emitting answer to caller:', callerId);
-            
-            api.socket.emit('call_signal', {
-                type: 'call_answered',
-                call_id: this.currentCall.call_id,
-                receiver_id: callerId
-            });
-            
-        } catch (error) {
-            console.error('Failed to answer call:', error);
-            this.showErrorMessage('Failed to answer call: ' + error.message);
+        if (callId) {
+            try {
+                await window.webrtc.answerCall(callId, callType);
+                this.hideIncomingCallPopup();
+            } catch (error) {
+                console.error('Failed to answer call:', error);
+                this.showErrorMessage('Failed to answer call: ' + error.message);
+            }
         }
     }
 
     async endCall() {
-        if (!this.currentCall) return;
-        
         try {
-            await api.endCall(this.currentCall.call_id);
-            
-            // Emit end signal to both caller and receiver
-            const otherUserId = this.selectedContact?.id || 
-                               this.currentCall.caller_id || 
-                               this.currentCall.caller?.id ||
-                               this.currentCall.receiver_id ||
-                               this.currentCall.receiver?.id;
-            
-            if (otherUserId) {
-                console.log('Emitting end signal to:', otherUserId);
-                
-                api.socket.emit('call_signal', {
-                    type: 'call_ended',
-                    call_id: this.currentCall.call_id,
-                    receiver_id: otherUserId
-                });
-            }
-            
-            this.hideCallModal();
-            
+            await window.webrtc.endCall();
         } catch (error) {
             console.error('Failed to end call:', error);
         }
     }
 
     handleCallSignal(data) {
-        console.log('Call signal received:', data);
-        console.log('Current user ID:', this.currentUser.id);
-        console.log('Receiver ID from data:', data.receiver_id);
-        
         switch (data.type) {
-            case 'call_initiated':
-                console.log('Processing call_initiated');
-                if (data.receiver_id == this.currentUser.id) {
-                    console.log('Call is for me! Showing modal');
-                    this.currentCall = data.call;
-                    this.showCallModal(data.call, 'incoming');
-                    window.notificationManager.showNotification('Incoming Call', `${data.call.receiver.name} is calling...`);
-                } else {
-                    console.log('Call not for me');
-                }
-                break;
-            case 'call_answered':
-                if (this.currentCall && this.currentCall.call_id === data.call_id) {
-                    document.getElementById('callStatus').textContent = 'Connected';
-                }
+            case 'call_rejected':
+                this.showCallStatus('User is busy');
                 break;
             case 'call_ended':
-                if (this.currentCall && this.currentCall.call_id === data.call_id) {
-                    this.hideCallModal();
-                }
+                this.showCallStatus('Call ended');
                 break;
         }
     }
@@ -1080,10 +1042,10 @@ class ChatApp {
     }
     
     showCallHistory() {
-        const chatArea = document.getElementById('chatArea');
+        const mainChatArea = document.querySelector('.flex-1.flex.flex-col');
         const callHistoryArea = document.getElementById('callHistoryArea');
         
-        if (chatArea) chatArea.classList.add('hidden');
+        if (mainChatArea) mainChatArea.classList.add('hidden');
         if (callHistoryArea) {
             callHistoryArea.classList.remove('hidden');
             callHistoryArea.classList.add('flex');
@@ -1093,13 +1055,13 @@ class ChatApp {
     
     showChatArea() {
         const callHistoryArea = document.getElementById('callHistoryArea');
-        const chatArea = document.getElementById('chatArea');
+        const mainChatArea = document.querySelector('.flex-1.flex.flex-col');
         
         if (callHistoryArea) {
             callHistoryArea.classList.add('hidden');
             callHistoryArea.classList.remove('flex');
         }
-        if (chatArea) chatArea.classList.remove('hidden');
+        if (mainChatArea) mainChatArea.classList.remove('hidden');
     }
     
     async loadCallHistory() {
@@ -1172,17 +1134,85 @@ class ChatApp {
         this.initiateCall('audio');
         this.showChatArea();
     }
+    
+    hideIncomingCallPopup() {
+        const popup = document.getElementById('incoming-call-popup');
+        if (popup) {
+            popup.classList.add('hidden');
+        }
+    }
+    
+    async rejectCall() {
+        const popup = document.getElementById('incoming-call-popup');
+        const callId = popup?.dataset.callId;
+        
+        if (callId) {
+            try {
+                await api.rejectCall(callId);
+                this.hideIncomingCallPopup();
+                
+                // Notify caller that call was rejected via WebRTC manager
+                if (window.webrtc) {
+                    window.webrtc.handleCallRejection(callId);
+                }
+            } catch (error) {
+                console.error('Failed to reject call:', error);
+            }
+        }
+    }
+    
+    closeChat() {
+        this.selectedContact = null;
+        
+        // Hide chat elements
+        document.getElementById('chatHeader').classList.add('hidden');
+        document.getElementById('messageInput').classList.add('hidden');
+        document.getElementById('messagesList').classList.add('hidden');
+        document.getElementById('welcomeMessage').classList.remove('hidden');
+        
+        // Remove active state from contacts
+        document.querySelectorAll('.contact-item').forEach(item => {
+            item.classList.remove('active');
+        });
+    }
+    
+    showCallStatus(message) {
+        // Voice announcement
+        this.speakMessage(message);
+        
+        const statusDiv = document.createElement('div');
+        statusDiv.className = 'fixed top-4 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-4 py-2 rounded-lg z-50';
+        statusDiv.textContent = message;
+        document.body.appendChild(statusDiv);
+        
+        setTimeout(() => {
+            if (statusDiv.parentNode) {
+                statusDiv.remove();
+            }
+        }, 3000);
+    }
+    
+    speakMessage(message) {
+        if ('speechSynthesis' in window) {
+            const utterance = new SpeechSynthesisUtterance(message);
+            utterance.rate = 1;
+            utterance.pitch = 1;
+            utterance.volume = 0.8;
+            speechSynthesis.speak(utterance);
+        }
+    }
 
     async logout() {
-        try {
-            await api.logout();
-            localStorage.removeItem('user');
-            window.location.href = '/wa/login';
-        } catch (error) {
-            console.error('Logout failed:', error);
-            // Force logout even if API call fails
-            localStorage.removeItem('user');
-            window.location.href = '/wa/login';
+        if (confirm('Are you sure you want to logout?')) {
+            try {
+                await api.logout();
+                localStorage.removeItem('user');
+                window.location.href = '/wa/login';
+            } catch (error) {
+                console.error('Logout failed:', error);
+                localStorage.removeItem('user');
+                window.location.href = '/wa/login';
+            }
         }
     }
 }

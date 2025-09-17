@@ -1,0 +1,12 @@
+{
+  "name": "whatsapp-webrtc",
+  "version": "1.0.0",
+  "description": "WhatsApp clone with WebRTC video calling",
+  "main": "app.py",
+  "scripts": {
+    "start": "python app.py",
+    "dev": "python app.py"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}
