@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+
+{% block content %}
+<script>
+// Check if user is logged in
+const user = localStorage.getItem('user');
+if (!user) {
+    // Not logged in, redirect to login
+    window.location.href = '/wa/login';
+} else {
+    // User is logged in, load chat interface
+    document.addEventListener('DOMContentLoaded', () => {
+        document.body.innerHTML = `
+<div class="h-screen flex bg-gray-100">
+    <!-- Sidebar -->
+    <div class="w-1/3 bg-white border-r border-gray-300 flex flex-col">
+        <!-- Header -->
+        <div class="bg-green-600 text-white p-4 flex justify-between items-center">
+            <div class="flex items-center">
+                <img id="userAvatar" src="https://ui-avatars.com/api/?name=User&background=25d366&color=fff&size=40" class="w-10 h-10 rounded-full mr-3">
+                <span id="userName">Loading...</span>
+            </div>
+            <div class="flex space-x-2">
+                <button id="callHistoryBtn" class="p-2 hover:bg-green-700 rounded">
+                    <i class="fas fa-phone"></i>
+                </button>
+                <button id="settingsBtn" class="p-2 hover:bg-green-700 rounded">
+                    <i class="fas fa-cog"></i>
+                </button>
+                <button id="logoutBtn" class="p-2 hover:bg-green-700 rounded">
+                    <i class="fas fa-sign-out-alt"></i>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Search -->
+        <div class="p-3 border-b">
+            <div class="flex space-x-2 mb-2">
+                <input type="text" id="searchContacts" placeholder="Search contacts..." 
+                       class="flex-1 p-2 border rounded-lg focus:outline-none focus:border-green-500">
+                <button id="newChatBtn" class="bg-green-600 text-white px-3 py-2 rounded-lg hover:bg-green-700">
+                    <i class="fas fa-plus"></i>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Contacts List -->
+        <div id="contactsList" class="flex-1 overflow-y-auto">
+            <!-- Contacts will be loaded here -->
+        </div>
+    </div>
+    
+    <!-- Chat Area -->
+    <div class="flex-1 flex flex-col">
+        <!-- Chat Header -->
+        <div id="chatHeader" class="bg-gray-200 p-4 border-b hidden">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <img id="chatAvatar" src="https://ui-avatars.com/api/?name=Contact&background=25d366&color=fff&size=40" class="w-10 h-10 rounded-full mr-3">
+                    <div>
+                        <div id="chatName" class="font-semibold"></div>
+                        <div id="chatStatus" class="text-sm text-gray-500"></div>
+                    </div>
+                </div>
+                <div class="flex space-x-2">
+                    <button id="audioCallBtn" class="p-2 hover:bg-gray-300 rounded">
+                        <i class="fas fa-phone text-green-600"></i>
+                    </button>
+                    <button id="videoCallBtn" class="p-2 hover:bg-gray-300 rounded">
+                        <i class="fas fa-video text-green-600"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Messages Area -->
+        <div id="messagesArea" class="flex-1 overflow-y-auto p-4 bg-gray-50">
+            <div id="welcomeMessage" class="text-center text-gray-500 mt-20">
+                <i class="fab fa-whatsapp text-8xl text-green-500 mb-4"></i>
+                <h2 class="text-2xl font-semibold mb-2">Welcome to WhatsApp Clone</h2>
+                <p>Select a contact to start messaging</p>
+            </div>
+            <div id="messagesList" class="hidden space-y-2">
+                <!-- Messages will be loaded here -->
+            </div>
+        </div>
+        
+        <!-- Message Input -->
+        <div id="messageInput" class="bg-white p-4 border-t hidden">
+            <div class="flex items-center space-x-2">
+                <button id="attachBtn" class="p-2 text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-paperclip"></i>
+                </button>
+                <input type="file" id="fileInput" class="hidden" accept="image/*,video/*,audio/*">
+                <input type="text" id="messageText" placeholder="Type a message..." 
+                       class="flex-1 p-2 border rounded-lg focus:outline-none focus:border-green-500">
+                <button id="sendBtn" class="p-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Call History Area -->
+    <div class="flex-1 flex-col hidden" id="callHistoryArea">
+        <div class="bg-gray-200 p-4 border-b">
+            <div class="flex items-center">
+                <button id="backToChatBtn" class="p-2 hover:bg-gray-300 rounded mr-3">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+                <h2 class="text-lg font-semibold">Call History</h2>
+            </div>
+        </div>
+        <div id="callHistoryList" class="flex-1 overflow-y-auto p-4">
+            <!-- Call history will be loaded here -->
+        </div>
+    </div>
+</div>
+
+<!-- New Chat Modal -->
+<div id="newChatModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-semibold">Start New Chat</h3>
+            <button id="closeNewChatBtn" class="text-gray-500 hover:text-gray-700">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="space-y-4">
+            <input type="text" id="newChatPhone" placeholder="Enter phone number" 
+                   class="w-full p-2 border rounded-lg focus:outline-none focus:border-green-500">
+            <div id="userSearchResults" class="space-y-2 max-h-40 overflow-y-auto"></div>
+            <button id="startChatBtn" class="w-full bg-green-600 text-white p-2 rounded-lg hover:bg-green-700">
+                Start Chat
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Call Modal -->
+<div id="callModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+        <div class="text-center">
+            <img id="calleeAvatar" src="https://ui-avatars.com/api/?name=Contact&background=25d366&color=fff&size=80" class="w-20 h-20 rounded-full mx-auto mb-4">
+            <h3 id="calleeName" class="text-xl font-semibold mb-2"></h3>
+            <p id="callStatus" class="text-gray-500 mb-6">Calling...</p>
+            <div class="flex justify-center space-x-4">
+                <button id="endCallBtn" class="bg-red-500 text-white p-3 rounded-full hover:bg-red-600">
+                    <i class="fas fa-phone-slash"></i>
+                </button>
+                <button id="answerCallBtn" class="bg-green-500 text-white p-3 rounded-full hover:bg-green-600 hidden">
+                    <i class="fas fa-phone"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Media Caption Modal -->
+<div id="mediaCaptionModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-semibold">Add Caption</h3>
+            <button id="closeCaptionBtn" class="text-gray-500 hover:text-gray-700">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="space-y-4">
+            <div id="mediaPreview" class="max-h-40 overflow-hidden rounded"></div>
+            <textarea id="mediaCaption" placeholder="Add a caption..." 
+                     class="w-full p-2 border rounded-lg focus:outline-none focus:border-green-500" rows="3"></textarea>
+            <div class="flex space-x-2">
+                <button id="cancelMediaBtn" class="flex-1 p-2 border rounded-lg hover:bg-gray-50">Cancel</button>
+                <button id="sendMediaBtn" class="flex-1 p-2 bg-green-600 text-white rounded-lg hover:bg-green-700">Send</button>
+            </div>
+        </div>
+    </div>
+</div>
+        `;
+    });
+}
+</script>
+{% endblock %}
+
+{% block scripts %}
+<script src="/wa/static/js/chat.js"></script>
+{% endblock %}

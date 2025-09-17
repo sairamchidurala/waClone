@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+
+{% block title %}Settings - WhatsApp Clone{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-100">
+    <!-- Header -->
+    <div class="bg-green-600 text-white p-4 flex items-center">
+        <button id="backBtn" class="mr-4 p-2 hover:bg-green-700 rounded">
+            <i class="fas fa-arrow-left"></i>
+        </button>
+        <h1 class="text-xl font-semibold">Settings</h1>
+    </div>
+
+    <!-- Settings Content -->
+    <div class="max-w-2xl mx-auto bg-white">
+        <!-- Profile Section -->
+        <div class="p-6 border-b">
+            <div class="flex items-center mb-4">
+                <img id="profileAvatar" src="https://ui-avatars.com/api/?name=User&background=25d366&color=fff&size=80" class="w-20 h-20 rounded-full mr-4">
+                <div class="flex-1">
+                    <h2 id="profileName" class="text-xl font-semibold">Loading...</h2>
+                    <p id="profilePhone" class="text-gray-500">Loading...</p>
+                </div>
+                <button id="editProfileBtn" class="text-green-600 hover:text-green-700">
+                    <i class="fas fa-edit text-xl"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Settings Options -->
+        <div class="divide-y">
+            <!-- Account -->
+            <div class="p-4 hover:bg-gray-50 cursor-pointer" id="accountSettings">
+                <div class="flex items-center">
+                    <i class="fas fa-user text-gray-500 w-6"></i>
+                    <div class="ml-4">
+                        <div class="font-medium">Account</div>
+                        <div class="text-sm text-gray-500">Privacy, security, change number</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notifications -->
+            <div class="p-4 hover:bg-gray-50" id="notificationSettings">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <i class="fas fa-bell text-gray-500 w-6"></i>
+                        <div class="ml-4">
+                            <div class="font-medium">Notifications</div>
+                            <div class="text-sm text-gray-500">Message & call notifications</div>
+                        </div>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="notificationToggle" class="sr-only peer" checked>
+                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
+                    </label>
+                </div>
+                <div class="mt-3 ml-10">
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-gray-600">Sound</span>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="soundToggle" class="sr-only peer" checked>
+                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Theme -->
+            <div class="p-4 hover:bg-gray-50" id="themeSettings">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <i class="fas fa-palette text-gray-500 w-6"></i>
+                        <div class="ml-4">
+                            <div class="font-medium">Theme</div>
+                            <div class="text-sm text-gray-500">Light or dark mode</div>
+                        </div>
+                    </div>
+                    <select id="themeSelect" class="border rounded px-2 py-1 text-sm">
+                        <option value="light">Light</option>
+                        <option value="dark">Dark</option>
+                        <option value="auto">Auto</option>
+                    </select>
+                </div>
+            </div>
+            
+            <!-- Status -->
+            <div class="p-4 hover:bg-gray-50 cursor-pointer" id="statusSettings">
+                <div class="flex items-center">
+                    <i class="fas fa-info-circle text-gray-500 w-6"></i>
+                    <div class="ml-4">
+                        <div class="font-medium">Status</div>
+                        <div class="text-sm text-gray-500">Set your status message</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Help -->
+            <div class="p-4 hover:bg-gray-50 cursor-pointer" id="helpSettings">
+                <div class="flex items-center">
+                    <i class="fas fa-question-circle text-gray-500 w-6"></i>
+                    <div class="ml-4">
+                        <div class="font-medium">Help</div>
+                        <div class="text-sm text-gray-500">Help center, contact us, privacy policy</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Logout -->
+            <div class="p-4 hover:bg-gray-50 cursor-pointer" id="logoutBtn">
+                <div class="flex items-center text-red-600">
+                    <i class="fas fa-sign-out-alt w-6"></i>
+                    <div class="ml-4 font-medium">Logout</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Profile Modal -->
+<div id="editProfileModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-semibold">Edit Profile</h3>
+            <button id="closeEditBtn" class="text-gray-500 hover:text-gray-700">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <form id="editProfileForm" class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium mb-1">Name</label>
+                <input type="text" id="editName" class="w-full p-2 border rounded-lg focus:outline-none focus:border-green-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Phone</label>
+                <input type="tel" id="editPhone" class="w-full p-2 border rounded-lg bg-gray-100" readonly>
+            </div>
+            <div class="flex space-x-2">
+                <button type="button" id="cancelEditBtn" class="flex-1 p-2 border rounded-lg hover:bg-gray-50">Cancel</button>
+                <button type="submit" class="flex-1 p-2 bg-green-600 text-white rounded-lg hover:bg-green-700">Save</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/settings.js"></script>
+{% endblock %}

@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}WhatsApp Clone{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="/wa/static/css/style.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100">
+    {% block content %}{% endblock %}
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script src="/wa/static/js/avatar.js"></script>
+    <script src="/wa/static/js/notifications.js"></script>
+    <script src="/wa/static/js/app.js"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>
