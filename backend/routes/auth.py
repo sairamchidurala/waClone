@@ -5,6 +5,7 @@ from backend.telegram_storage import telegram_storage
 from werkzeug.utils import secure_filename
 from datetime import datetime
 import os
+import uuid
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -47,6 +48,7 @@ def login():
             
         phone = data.get('phone')
         password = data.get('password')
+        force_login = data.get('force_login', False)
         
         if not all([phone, password]):
             return jsonify({'error': 'Phone and password are required'}), 400
@@ -56,9 +58,28 @@ def login():
     user = User.query.filter_by(phone=phone).first()
     if user and user.check_password(password):
         try:
-            login_user(user)
+            # Check if user is already logged in elsewhere
+            if user.is_online and user.session_id and not force_login:
+                return jsonify({
+                    'error': 'already_logged_in',
+                    'message': 'This account is already logged in from another device. Do you want to close that session and login here?'
+                }), 409
+            
+            # Force logout from other sessions
+            if user.session_id:
+                user.session_id = None
+                user.is_online = False
+                db.session.commit()
+            
+            # Generate new session ID and login
+            new_session_id = str(uuid.uuid4())
+            user.session_id = new_session_id
             user.is_online = True
+            
+            login_user(user)
+            session['user_session_id'] = new_session_id
             db.session.commit()
+            
             return jsonify({
                 'message': 'Login successful',
                 'user': {
@@ -79,6 +100,8 @@ def login():
 def logout():
     try:
         current_user.is_online = False
+        current_user.session_id = None
+        session.pop('user_session_id', None)
         db.session.commit()
         logout_user()
         return jsonify({'message': 'Logged out successfully'}), 200
@@ -89,6 +112,11 @@ def logout():
 @auth_bp.route('/me', methods=['GET'])
 @login_required
 def get_current_user():
+    # Double-check session validity
+    session_id = session.get('user_session_id')
+    if not session_id or current_user.session_id != session_id:
+        return jsonify({'error': 'Session expired'}), 401
+    
     return jsonify({
         'id': current_user.id,
         'phone': current_user.phone,
@@ -97,6 +125,15 @@ def get_current_user():
         'is_online': current_user.is_online,
         'is_private': current_user.is_private
     }), 200
+
+@auth_bp.route('/check-session', methods=['GET'])
+def check_session():
+    """Check if current session is valid"""
+    if current_user.is_authenticated:
+        session_id = session.get('user_session_id')
+        if session_id and current_user.session_id == session_id:
+            return jsonify({'valid': True}), 200
+    return jsonify({'valid': False}), 401
 
 @auth_bp.route('/update-profile', methods=['POST'])
 @login_required

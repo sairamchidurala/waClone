@@ -63,14 +63,76 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
         const result = await response.json();
         if (response.ok) {
             localStorage.setItem('user', JSON.stringify(result.user));
+            if (window.api) {
+                window.api.startSessionMonitoring();
+            }
             window.location.href = '/wa/';
+        } else if (response.status === 409 && result.error === 'already_logged_in') {
+            showAlreadyLoggedInDialog(data);
         } else {
-            document.getElementById('error-message').textContent = result.error;
+            document.getElementById('error-message').textContent = result.message || result.error;
             document.getElementById('error-message').classList.remove('hidden');
         }
     } catch (error) {
         console.error('Login error:', error);
+        document.getElementById('error-message').textContent = 'Login failed. Please try again.';
+        document.getElementById('error-message').classList.remove('hidden');
     }
 });
+
+function showAlreadyLoggedInDialog(loginData) {
+    const dialog = document.createElement('div');
+    dialog.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+    dialog.innerHTML = `
+        <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <div class="text-center">
+                <i class="fas fa-exclamation-triangle text-yellow-500 text-4xl mb-4"></i>
+                <h3 class="text-lg font-semibold mb-2">Already Logged In</h3>
+                <p class="text-gray-600 mb-6">This account is already logged in from another device. Do you want to close that session and login here?</p>
+                <div class="flex space-x-3">
+                    <button id="cancelLogin" class="flex-1 px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50">
+                        Cancel
+                    </button>
+                    <button id="forceLogin" class="flex-1 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">
+                        Login Here
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(dialog);
+    
+    document.getElementById('cancelLogin').onclick = () => {
+        document.body.removeChild(dialog);
+    };
+    
+    document.getElementById('forceLogin').onclick = async () => {
+        document.body.removeChild(dialog);
+        try {
+            const response = await fetch('/wa/api/auth/login', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({...loginData, force_login: true})
+            });
+            
+            const result = await response.json();
+            if (response.ok) {
+                localStorage.setItem('user', JSON.stringify(result.user));
+                if (window.api) {
+                    window.api.startSessionMonitoring();
+                }
+                window.location.href = '/wa/';
+            } else {
+                document.getElementById('error-message').textContent = result.message || result.error;
+                document.getElementById('error-message').classList.remove('hidden');
+            }
+        } catch (error) {
+            console.error('Force login error:', error);
+            document.getElementById('error-message').textContent = 'Login failed. Please try again.';
+            document.getElementById('error-message').classList.remove('hidden');
+        }
+    };
+}
 </script>
 {% endblock %}

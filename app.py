@@ -1,4 +1,4 @@
-from flask import Flask, render_template, send_from_directory
+from flask import Flask, render_template, send_from_directory, session
 from flask_login import LoginManager
 from flask_socketio import SocketIO, emit, join_room, leave_room
 from flask import request
@@ -17,6 +17,7 @@ app.config['APPLICATION_ROOT'] = '/wa'
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key')
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///whatsapp.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['PERMANENT_SESSION_LIFETIME'] = int(os.getenv('SESSION_TIMEOUT', 86400))  # 24 hours default
 app.config['UPLOAD_FOLDER'] = os.getenv('UPLOAD_FOLDER', 'uploads')
 try:
     app.config['MAX_CONTENT_LENGTH'] = int(os.getenv('MAX_CONTENT_LENGTH', 16 * 1024 * 1024))
@@ -27,12 +28,26 @@ except ValueError:
 db.init_app(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
-login_manager.login_view = 'login'
+login_manager.login_view = 'login_page'
 socketio = SocketIO(app, cors_allowed_origins="*", path='/wa/socket.io')
 
 @login_manager.user_loader
 def load_user(user_id):
-    return db.session.get(User, int(user_id))
+    user = db.session.get(User, int(user_id))
+    if user:
+        try:
+            # Validate session integrity
+            session_id = session.get('user_session_id')
+            if hasattr(user, 'session_id') and (not session_id or user.session_id != session_id):
+                # Invalid session, force logout
+                user.is_online = False
+                user.session_id = None
+                db.session.commit()
+                return None
+        except Exception:
+            # Handle cases where session_id column doesn't exist yet
+            pass
+    return user
 
 # Register blueprints
 app.register_blueprint(auth_bp, url_prefix='/wa/api/auth')

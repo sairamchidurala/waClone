@@ -18,6 +18,16 @@ class WhatsAppAPI {
 
         try {
             const response = await fetch(url, config);
+            
+            // Check if response is HTML (login redirect)
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('text/html')) {
+                // Session expired, redirect to login
+                localStorage.removeItem('user');
+                window.location.href = '/wa/login';
+                throw new Error('Session expired');
+            }
+            
             const data = await response.json();
 
             if (!response.ok) {
@@ -27,16 +37,53 @@ class WhatsAppAPI {
             return data;
         } catch (error) {
             console.error('API request failed:', error);
+            
+            // Handle session expiry
+            if (error.message.includes('Unexpected token') || error.message.includes('DOCTYPE')) {
+                localStorage.removeItem('user');
+                window.location.href = '/wa/login';
+            }
+            
             throw error;
         }
     }
 
     // Auth methods
     async login(phone, password) {
-        return this.request('/api/auth/login', {
+        const result = await this.request('/api/auth/login', {
             method: 'POST',
             body: JSON.stringify({ phone, password })
         });
+        
+        // Start session monitoring after successful login
+        if (result.user) {
+            this.startSessionMonitoring();
+        }
+        
+        return result;
+    }
+    
+    async checkSession() {
+        try {
+            return await this.request('/api/auth/check-session');
+        } catch (error) {
+            return { valid: false };
+        }
+    }
+    
+    startSessionMonitoring() {
+        // Check session validity every 30 seconds
+        setInterval(async () => {
+            const sessionCheck = await this.checkSession();
+            if (!sessionCheck.valid) {
+                this.handleForcedLogout();
+            }
+        }, 30000);
+    }
+    
+    handleForcedLogout() {
+        localStorage.removeItem('user');
+        window.location.href = '/wa/login';
     }
 
     async register(name, phone, password) {
@@ -47,7 +94,10 @@ class WhatsAppAPI {
     }
 
     async logout() {
-        return this.request('/api/auth/logout', { method: 'POST' });
+        const result = await this.request('/api/auth/logout', { method: 'POST' });
+        localStorage.removeItem('user');
+        window.location.href = '/wa/login';
+        return result;
     }
 
     async getCurrentUser() {

@@ -65,7 +65,15 @@ class WebRTCManager {
             return this.currentCallId;
         } catch (error) {
             console.error('Failed to start call:', error);
-            throw error;
+            
+            // Clean up on error
+            this.cleanup();
+            this.hideCallScreen();
+            
+            // Don't re-throw if it's a session error (already handled)
+            if (!error.message.includes('Session expired')) {
+                throw error;
+            }
         }
     }
 
@@ -90,7 +98,15 @@ class WebRTCManager {
             this.startCallTimer();
         } catch (error) {
             console.error('Failed to answer call:', error);
-            throw error;
+            
+            // Clean up on error
+            this.cleanup();
+            this.hideCallScreen();
+            
+            // Don't re-throw if it's a session error (already handled)
+            if (!error.message.includes('Session expired')) {
+                throw error;
+            }
         }
     }
 
@@ -138,6 +154,29 @@ class WebRTCManager {
                 this.cleanup();
                 this.hideCallScreen();
                 break;
+            case 'call_mode_changed':
+                if (data.call_id === this.currentCallId) {
+                    this.handleCallModeChange(data.new_mode);
+                }
+                break;
+        }
+    }
+    
+    async handleCallModeChange(newMode) {
+        try {
+            if (newMode === 'audio' && this.isVideoCall) {
+                // Other user switched to audio, switch our UI too
+                this.isVideoCall = false;
+                this.hideCallScreen();
+                this.showCallScreen();
+            } else if (newMode === 'video' && !this.isVideoCall) {
+                // Other user switched to video, switch our UI too
+                this.isVideoCall = true;
+                this.hideCallScreen();
+                this.showCallScreen();
+            }
+        } catch (error) {
+            console.error('Failed to handle call mode change:', error);
         }
     }
 
@@ -344,27 +383,55 @@ class WebRTCManager {
         try {
             // Get video stream
             const videoStream = await navigator.mediaDevices.getUserMedia({
-                video: true,
+                video: {
+                    facingMode: this.currentCamera,
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 }
+                },
                 audio: true
             });
             
             // Replace tracks in peer connection
             const peerConnection = this.peers[this.currentCallId];
-            if (peerConnection && this.localStream) {
+            if (peerConnection) {
                 const videoTrack = videoStream.getVideoTracks()[0];
-                const sender = peerConnection.getSenders().find(s => 
+                const audioTrack = videoStream.getAudioTracks()[0];
+                
+                // Replace or add video track
+                const videoSender = peerConnection.getSenders().find(s => 
                     s.track && s.track.kind === 'video'
                 );
                 
-                if (sender) {
-                    await sender.replaceTrack(videoTrack);
+                if (videoSender) {
+                    await videoSender.replaceTrack(videoTrack);
                 } else {
                     peerConnection.addTrack(videoTrack, videoStream);
                 }
                 
-                // Update local stream
-                this.localStream.getVideoTracks().forEach(track => track.stop());
+                // Replace audio track
+                const audioSender = peerConnection.getSenders().find(s => 
+                    s.track && s.track.kind === 'audio'
+                );
+                
+                if (audioSender) {
+                    await audioSender.replaceTrack(audioTrack);
+                }
+                
+                // Stop old tracks
+                if (this.localStream) {
+                    this.localStream.getTracks().forEach(track => track.stop());
+                }
+                
                 this.localStream = videoStream;
+                
+                // Notify other user about call mode change
+                console.log('Emitting call mode change to video');
+                this.socket.emit('call_signal', {
+                    type: 'call_mode_changed',
+                    call_id: this.currentCallId,
+                    new_mode: 'video',
+                    room: `call_${this.currentCallId}`
+                });
                 
                 // Switch to video UI
                 this.isVideoCall = true;
@@ -411,6 +478,15 @@ class WebRTCManager {
                 
                 this.localStream = audioStream;
                 
+                // Notify other user about call mode change
+                console.log('Emitting call mode change to audio');
+                this.socket.emit('call_signal', {
+                    type: 'call_mode_changed',
+                    call_id: this.currentCallId,
+                    new_mode: 'audio',
+                    room: `call_${this.currentCallId}`
+                });
+                
                 // Switch to audio UI
                 this.isVideoCall = false;
                 this.hideCallScreen();
@@ -422,14 +498,78 @@ class WebRTCManager {
     }
 
     showCallScreen() {
+        if (!this.currentCallId) return;
+        
         const callScreen = document.getElementById('call-screen');
         if (callScreen) {
             if (this.isVideoCall) {
                 callScreen.classList.remove('hidden');
+                if (this.callStatus === 'connected') {
+                    this.startCallTimer();
+                }
             } else {
-                // For audio calls, show a smaller overlay instead
                 this.showAudioCallOverlay();
             }
+        }
+    }
+    
+    async handleCallModeChange(newMode) {
+        console.log('Handling call mode change to:', newMode);
+        try {
+            if (newMode === 'audio' && this.isVideoCall) {
+                // Other user switched to audio - clear remote video and switch UI
+                const remoteVideo = document.getElementById('remote-video');
+                if (remoteVideo) {
+                    remoteVideo.srcObject = null;
+                }
+                
+                this.isVideoCall = false;
+                this.hideCallScreen();
+                this.showCallScreen();
+                
+            } else if (newMode === 'video' && !this.isVideoCall) {
+                // Other user switched to video - switch UI back to video
+                this.isVideoCall = true;
+                this.hideCallScreen();
+                this.showCallScreen();
+            }
+        } catch (error) {
+            console.error('Failed to handle call mode change:', error);
+        }
+    }
+    
+    handleCallSignal(data) {
+        console.log('Received call signal:', data);
+        switch (data.type) {
+            case 'call_initiated':
+                if (data.receiver_id == this.currentUser?.id) {
+                    this.currentCallId = data.call_id;
+                    this.showIncomingCallPopup(data);
+                }
+                break;
+            case 'call_answered':
+                if (this.inactiveTimeout) {
+                    clearTimeout(this.inactiveTimeout);
+                }
+                this.callStatus = 'connected';
+                this.connectedTime = Date.now();
+                this.updateCallStatus('Connected');
+                this.startCallTimer();
+                this.initiateWebRTCConnection(data.call_id);
+                break;
+            case 'call_ended':
+                this.endCall();
+                break;
+            case 'call_rejected':
+                this.cleanup();
+                this.hideCallScreen();
+                break;
+            case 'call_mode_changed':
+                console.log('Call mode changed signal received:', data);
+                if (data.call_id === this.currentCallId) {
+                    this.handleCallModeChange(data.new_mode);
+                }
+                break;
         }
     }
 

@@ -16,6 +16,7 @@ class User(UserMixin, db.Model):
     is_private = db.Column(db.Boolean, default=True)
     last_seen = db.Column(db.DateTime, default=datetime.utcnow)
     is_online = db.Column(db.Boolean, default=False)
+    session_id = db.Column(db.String(255), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     sent_messages = db.relationship('Message', foreign_keys='Message.sender_id', backref='sender')

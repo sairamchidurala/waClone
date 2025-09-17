@@ -8,7 +8,21 @@ if (!user) {
     // Not logged in, redirect to login
     window.location.href = '/wa/login';
 } else {
-    // User is logged in, load chat interface
+    // User is logged in, start session monitoring and load chat interface
+    if (window.api) {
+        window.api.startSessionMonitoring();
+    }
+    
+    // Check session validity immediately
+    if (window.api) {
+        window.api.checkSession().then(result => {
+            if (!result.valid) {
+                localStorage.removeItem('user');
+                window.location.href = '/wa/login';
+                return;
+            }
+        });
+    }
     document.addEventListener('DOMContentLoaded', () => {
         document.body.innerHTML = `
 <div class="h-screen flex" style="background-color: var(--bg-primary);">

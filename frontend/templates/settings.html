@@ -18,14 +18,18 @@
         <div class="p-6" style="border-bottom: 1px solid var(--border-color);">
             <div class="flex items-center mb-4">
                 <div class="relative">
-                    <img id="profileAvatar" src="https://ui-avatars.com/api/?name=User&background=25d366&color=fff&size=80" class="w-20 h-20 rounded-full mr-4 cursor-pointer hover:opacity-80 transition-opacity">
-                    <button id="changeAvatarBtn" class="absolute bottom-0 right-2 bg-green-600 text-white p-1 rounded-full hover:bg-green-700 transition-colors">
+                    <img id="profileAvatar"
+                        src="https://ui-avatars.com/api/?name=User&background=25d366&color=fff&size=80"
+                        class="w-20 h-20 rounded-full mr-4 cursor-pointer hover:opacity-80 transition-opacity">
+                    <button id="changeAvatarBtn"
+                        class="absolute bottom-0 right-2 bg-green-600 text-white p-1 rounded-full hover:bg-green-700 transition-colors">
                         <i class="fas fa-camera text-xs"></i>
                     </button>
                     <input type="file" id="avatarInput" class="hidden" accept="image/*">
                 </div>
                 <div class="flex-1">
-                    <h2 id="profileName" class="text-xl font-semibold" style="color: var(--text-primary);">Loading...</h2>
+                    <h2 id="profileName" class="text-xl font-semibold" style="color: var(--text-primary);">Loading...
+                    </h2>
                     <p id="profilePhone" style="color: var(--text-secondary);">Loading...</p>
                 </div>
                 <button id="editProfileBtn" class="text-green-600 hover:text-green-700">
@@ -43,11 +47,13 @@
                         <i class="fas fa-user w-6" style="color: var(--text-secondary);"></i>
                         <div class="ml-4">
                             <div class="font-medium" style="color: var(--text-primary);">Profile Visibility</div>
-                            <div class="text-sm" style="color: var(--text-secondary);">Allow others to find you in search</div>
+                            <div class="text-sm" style="color: var(--text-secondary);">Allow others to find you in
+                                search</div>
                         </div>
                     </div>
                     <div class="flex items-center">
-                        <span id="privacyLabel" class="text-sm mr-3" style="color: var(--text-secondary);">Private</span>
+                        <span id="privacyLabel" class="text-sm mr-3"
+                            style="color: var(--text-secondary);">Private</span>
                         <label class="toggle">
                             <input type="checkbox" id="privacyToggle">
                             <span class="slider"></span>
@@ -57,18 +63,22 @@
             </div>
 
             <!-- Notifications -->
-            <div class="p-4 transition-colors" id="notificationSettings" style="hover:background-color: var(--bg-tertiary);">
+            <div class="p-4 transition-colors" id="notificationSettings"
+                style="hover:background-color: var(--bg-tertiary);">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center">
                         <i class="fas fa-bell w-6" style="color: var(--text-secondary);"></i>
                         <div class="ml-4">
                             <div class="font-medium" style="color: var(--text-primary);">Notifications</div>
-                            <div class="text-sm" style="color: var(--text-secondary);">Message & call notifications</div>
+                            <div class="text-sm" style="color: var(--text-secondary);">Message & call notifications
+                            </div>
                         </div>
                     </div>
                     <label class="relative inline-flex items-center cursor-pointer">
                         <input type="checkbox" id="notificationToggle" class="sr-only peer" checked>
-                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
+                        <div
+                            class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600">
+                        </div>
                     </label>
                 </div>
                 <div class="mt-3 ml-10">
@@ -76,7 +86,9 @@
                         <span class="text-sm" style="color: var(--text-secondary);">Sound</span>
                         <label class="relative inline-flex items-center cursor-pointer">
                             <input type="checkbox" id="soundToggle" class="sr-only peer" checked>
-                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
+                            <div
+                                class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600">
+                            </div>
                         </label>
                     </div>
                 </div>
@@ -92,18 +104,20 @@
                             <div class="text-sm" style="color: var(--text-secondary);">Light or dark mode</div>
                         </div>
                     </div>
-                    <select id="themeSelect" class="rounded px-2 py-1 text-sm transition-colors" style="background-color: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-primary);">
+                    <select id="themeSelect" class="rounded px-2 py-1 text-sm transition-colors"
+                        style="background-color: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-primary);">
                         <option value="light">Light</option>
                         <option value="dark">Dark</option>
                         <option value="auto">Auto</option>
                     </select>
                 </div>
             </div>
-            
 
-            
+
+
             <!-- Status -->
-            <div class="p-4 cursor-pointer transition-colors" id="statusSettings" style="hover:background-color: var(--bg-tertiary);">
+            <div class="p-4 cursor-pointer transition-colors" id="statusSettings"
+                style="hover:background-color: var(--bg-tertiary);">
                 <div class="flex items-center">
                     <i class="fas fa-info-circle w-6" style="color: var(--text-secondary);"></i>
                     <div class="ml-4">
@@ -114,18 +128,21 @@
             </div>
 
             <!-- Help -->
-            <div class="p-4 cursor-pointer transition-colors" id="helpSettings" style="hover:background-color: var(--bg-tertiary);">
+            <div class="p-4 cursor-pointer transition-colors" id="helpSettings"
+                style="hover:background-color: var(--bg-tertiary);">
                 <div class="flex items-center">
                     <i class="fas fa-question-circle w-6" style="color: var(--text-secondary);"></i>
                     <div class="ml-4">
                         <div class="font-medium" style="color: var(--text-primary);">Help</div>
-                        <div class="text-sm" style="color: var(--text-secondary);">Help center, contact us, privacy policy</div>
+                        <div class="text-sm" style="color: var(--text-secondary);">Help center, contact us, privacy
+                            policy</div>
                     </div>
                 </div>
             </div>
 
             <!-- Logout -->
-            <div class="p-4 cursor-pointer transition-colors" id="logoutBtn" style="hover:background-color: var(--bg-tertiary);">
+            <div class="p-4 cursor-pointer transition-colors" id="logoutBtn"
+                style="hover:background-color: var(--bg-tertiary);">
                 <div class="flex items-center text-red-600">
                     <i class="fas fa-sign-out-alt w-6"></i>
                     <div class="ml-4 font-medium">Logout</div>
@@ -137,7 +154,8 @@
 
 <!-- Edit Profile Modal -->
 <div id="editProfileModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
-    <div class="rounded-lg p-6 max-w-md w-full mx-4" style="background-color: var(--bg-secondary); box-shadow: 0 10px 25px var(--shadow);">
+    <div class="rounded-lg p-6 max-w-md w-full mx-4"
+        style="background-color: var(--bg-secondary); box-shadow: 0 10px 25px var(--shadow);">
         <div class="flex justify-between items-center mb-4">
             <h3 class="text-lg font-semibold">Edit Profile</h3>
             <button id="closeEditBtn" class="text-gray-500 hover:text-gray-700">
@@ -147,15 +165,18 @@
         <form id="editProfileForm" class="space-y-4">
             <div>
                 <label class="block text-sm font-medium mb-1">Name</label>
-                <input type="text" id="editName" class="w-full p-2 border rounded-lg focus:outline-none focus:border-green-500">
+                <input type="text" id="editName"
+                    class="w-full p-2 border rounded-lg focus:outline-none focus:border-green-500">
             </div>
             <div>
                 <label class="block text-sm font-medium mb-1">Phone</label>
                 <input type="tel" id="editPhone" class="w-full p-2 border rounded-lg bg-gray-100" readonly>
             </div>
             <div class="flex space-x-2">
-                <button type="button" id="cancelEditBtn" class="flex-1 p-2 border rounded-lg hover:bg-gray-50">Cancel</button>
-                <button type="submit" class="flex-1 p-2 bg-green-600 text-white rounded-lg hover:bg-green-700">Save</button>
+                <button type="button" id="cancelEditBtn"
+                    class="flex-1 p-2 border rounded-lg hover:bg-gray-50">Cancel</button>
+                <button type="submit"
+                    class="flex-1 p-2 bg-green-600 text-white rounded-lg hover:bg-green-700">Save</button>
             </div>
         </form>
     </div>
@@ -176,7 +197,8 @@
 
 <!-- Image Crop Modal -->
 <div id="cropModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
-    <div class="rounded-lg p-6 max-w-md w-full mx-4" style="background-color: var(--bg-secondary); box-shadow: 0 10px 25px var(--shadow);">
+    <div class="rounded-lg p-6 max-w-md w-full mx-4"
+        style="background-color: var(--bg-secondary); box-shadow: 0 10px 25px var(--shadow);">
         <div class="flex justify-between items-center mb-4">
             <h3 class="text-lg font-semibold" style="color: var(--text-primary);">Crop Profile Picture</h3>
             <button id="closeCropBtn" class="transition-colors" style="color: var(--text-secondary);">
@@ -187,21 +209,27 @@
             <div class="relative bg-gray-100 rounded-lg overflow-hidden" style="background-color: var(--bg-tertiary);">
                 <canvas id="cropCanvas" class="max-w-full max-h-64 mx-auto block cursor-grab"></canvas>
                 <div id="cropOverlay" class="absolute inset-0 pointer-events-none">
-                    <div class="absolute border-2 border-green-500 bg-transparent" id="cropBox" style="width: 150px; height: 150px; top: 50%; left: 50%; transform: translate(-50%, -50%);"></div>
+                    <div class="absolute border-2 border-green-500 bg-transparent" id="cropBox"
+                        style="width: 150px; height: 150px; top: 50%; left: 50%; transform: translate(-50%, -50%);">
+                    </div>
                 </div>
             </div>
             <div class="flex items-center justify-center space-x-4 mt-2">
-                <button id="zoomOutBtn" class="p-2 rounded transition-colors" style="background-color: var(--bg-tertiary); color: var(--text-primary);">
+                <button id="zoomOutBtn" class="p-2 rounded transition-colors"
+                    style="background-color: var(--bg-tertiary); color: var(--text-primary);">
                     <i class="fas fa-search-minus"></i>
                 </button>
                 <span class="text-sm" style="color: var(--text-secondary);">Drag to move • Scroll to zoom</span>
-                <button id="zoomInBtn" class="p-2 rounded transition-colors" style="background-color: var(--bg-tertiary); color: var(--text-primary);">
+                <button id="zoomInBtn" class="p-2 rounded transition-colors"
+                    style="background-color: var(--bg-tertiary); color: var(--text-primary);">
                     <i class="fas fa-search-plus"></i>
                 </button>
             </div>
             <div class="flex space-x-2">
-                <button id="cancelCropBtn" class="flex-1 p-2 rounded-lg transition-colors" style="background-color: var(--bg-tertiary); color: var(--text-primary);">Cancel</button>
-                <button id="applyCropBtn" class="flex-1 p-2 text-white rounded-lg transition-colors" style="background-color: var(--green-primary);">Apply</button>
+                <button id="cancelCropBtn" class="flex-1 p-2 rounded-lg transition-colors"
+                    style="background-color: var(--bg-tertiary); color: var(--text-primary);">Cancel</button>
+                <button id="applyCropBtn" class="flex-1 p-2 text-white rounded-lg transition-colors"
+                    style="background-color: var(--green-primary);">Apply</button>
             </div>
         </div>
     </div>

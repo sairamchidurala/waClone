@@ -1417,17 +1417,13 @@ class ChatApp {
     }
 
     async logout() {
-        if (confirm('Are you sure you want to logout?')) {
-            try {
-                await api.logout();
-                localStorage.removeItem('user');
-                window.location.href = '/wa/login';
-            } catch (error) {
-                console.error('Logout failed:', error);
-                localStorage.removeItem('user');
-                window.location.href = '/wa/login';
-            }
+        try {
+            await api.logout();
+        } catch (error) {
+            console.error('Logout failed:', error);
         }
+        localStorage.removeItem('user');
+        window.location.href = '/wa/login';
     }
 }
 
