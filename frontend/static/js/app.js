@@ -76,10 +76,10 @@ class WhatsAppAPI {
         });
     }
 
-    async getConversation(userId) {
+    async getConversation(userId, page = 1) {
         // Encrypt user ID for API call
         const encryptedUserId = await this.encryptUserId(userId);
-        const response = await this.request(`/api/messages/conversation/${encryptedUserId}`);
+        const response = await this.request(`/api/messages/conversation/${encryptedUserId}?page=${page}&limit=50`);
         // Decrypt API response
         if (response.encrypted_data) {
             const decrypted = await this.decryptResponse(response.encrypted_data);
@@ -173,18 +173,17 @@ class WhatsAppAPI {
 
 // Utility functions
 function formatTime(timestamp) {
+    // Timestamp is already in IST from backend
     const date = new Date(timestamp);
-    // Convert to IST (UTC+5:30)
-    const istDate = new Date(date.getTime() + (5.5 * 60 * 60 * 1000));
     const now = new Date();
-    const diff = now - istDate;
+    const diff = now - date;
 
     if (diff < 24 * 60 * 60 * 1000) {
-        return istDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     } else if (diff < 7 * 24 * 60 * 60 * 1000) {
-        return istDate.toLocaleDateString([], { weekday: 'short' });
+        return date.toLocaleDateString([], { weekday: 'short' });
     } else {
-        return istDate.toLocaleDateString([], { month: 'short', day: 'numeric' });
+        return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
     }
 }
 

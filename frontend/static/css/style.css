@@ -155,6 +155,50 @@
     justify-content: center;
 }
 
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    .h-screen.flex {
+        flex-direction: column;
+    }
+    
+    .w-1\/3 {
+        width: 100%;
+        height: 60vh;
+    }
+    
+    .flex-1.flex.flex-col {
+        height: 40vh;
+    }
+    
+    #chatHeader {
+        padding: 12px;
+    }
+    
+    #messageInput {
+        padding: 12px;
+    }
+    
+    .contact-item {
+        padding: 16px;
+    }
+    
+    #incoming-call-popup {
+        top: 50%;
+        left: 50%;
+        right: auto;
+        transform: translate(-50%, -50%);
+        width: 90%;
+        max-width: 320px;
+    }
+    
+    #audio-call-overlay {
+        top: 10px;
+        right: 10px;
+        width: 200px;
+        padding: 12px;
+    }
+}
+
 /* WebRTC Call Styles */
 #call-screen {
     z-index: 1000;
@@ -167,6 +211,25 @@
 #local-video {
     z-index: 1001;
     box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+}
+
+@media (max-width: 768px) {
+    #local-video {
+        width: 80px;
+        height: 60px;
+        top: 10px;
+        right: 10px;
+    }
+    
+    .control-btn {
+        width: 50px;
+        height: 50px;
+        font-size: 20px;
+    }
+    
+    #call-screen .bg-black.bg-opacity-50 {
+        padding: 16px;
+    }
 }
 
 #remote-video {
@@ -245,4 +308,23 @@
     border-radius: 20px;
     color: white;
     font-size: 14px;
+}
+
+/* Mobile Navigation */
+@media (max-width: 768px) {
+    .mobile-hidden {
+        display: none;
+    }
+    
+    .mobile-show {
+        display: block;
+    }
+    
+    .mobile-chat-open .w-1\/3 {
+        display: none;
+    }
+    
+    .mobile-chat-open .flex-1.flex.flex-col {
+        height: 100vh;
+    }
 }

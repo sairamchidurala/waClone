@@ -1,11 +1,12 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, redirect, Response
 from flask_login import login_required, current_user
 from backend.models import Message, User, db
 from backend.telegram_storage import telegram_storage
 from backend.encryption import message_encryption
-from datetime import datetime
-import os
+from datetime import datetime, timedelta
 from werkzeug.utils import secure_filename
+import requests
+import os
 
 messages_bp = Blueprint('messages', __name__)
 
@@ -61,10 +62,12 @@ def send_message():
         db.session.rollback()
         return jsonify({'error': 'Failed to send message'}), 500
     
+    # Convert to IST
+    ist_timestamp = message.timestamp.replace(tzinfo=None) + timedelta(hours=5, minutes=30)
     return jsonify({
         'id': message.id,
         'content': content,  # Return original content, not encrypted
-        'timestamp': message.timestamp.isoformat(),
+        'timestamp': ist_timestamp.isoformat(),
         'sender_id': message.sender_id
     }), 201
 
@@ -146,12 +149,14 @@ def send_media():
         db.session.commit()
         
         # Return secure response without exposing URLs
+        # Convert to IST
+        ist_timestamp = message.timestamp.replace(tzinfo=None) + timedelta(hours=5, minutes=30)
         return jsonify({
             'id': message.id,
             'content': message.content,
             'message_type': message.message_type,
             'secure_file_id': message.id,  # Use message ID as secure identifier
-            'timestamp': message.timestamp.isoformat()
+            'timestamp': ist_timestamp.isoformat()
         }), 201
     
     return jsonify({'error': 'Invalid file type'}), 400
@@ -165,15 +170,21 @@ def get_conversation(encrypted_token):
         return jsonify({'error': 'Invalid or unauthorized token'}), 403
     
     page = request.args.get('page', 1, type=int)
-    per_page = 50
+    per_page = request.args.get('limit', 50, type=int)
+    offset = (page - 1) * per_page
     
     try:
+        total_messages = Message.query.filter(
+            ((Message.sender_id == current_user.id) & (Message.receiver_id == target_user_id)) |
+            ((Message.sender_id == target_user_id) & (Message.receiver_id == current_user.id))
+        ).count()
+        
         messages = Message.query.filter(
             ((Message.sender_id == current_user.id) & (Message.receiver_id == target_user_id)) |
             ((Message.sender_id == target_user_id) & (Message.receiver_id == current_user.id))
-        ).order_by(Message.timestamp.desc()).limit(per_page).all()
+        ).order_by(Message.timestamp.desc()).offset(offset).limit(per_page).all()
         
-        # Reverse to show oldest first
+        # Reverse to show oldest first within the page
         messages = list(reversed(messages))
     except Exception as e:
         return jsonify({'error': 'Failed to load conversation'}), 500
@@ -182,11 +193,13 @@ def get_conversation(encrypted_token):
     decrypted_messages = []
     for msg in messages:
         decrypted_content = message_encryption.decrypt_message(msg.content) if msg.message_type == 'text' else msg.content
+        # Convert to IST
+        ist_timestamp = msg.timestamp.replace(tzinfo=None) + timedelta(hours=5, minutes=30)
         message_data = {
             'id': msg.id,
             'content': decrypted_content,
             'message_type': msg.message_type,
-            'timestamp': msg.timestamp.isoformat(),
+            'timestamp': ist_timestamp.isoformat(),
             'sender_id': msg.sender_id,
             'is_read': msg.is_read,
             'is_delivered': getattr(msg, 'is_delivered', False)
@@ -196,7 +209,13 @@ def get_conversation(encrypted_token):
             message_data['secure_file_id'] = msg.id
         decrypted_messages.append(message_data)
     
-    return jsonify(message_encryption.encrypt_api_response(decrypted_messages)), 200
+    response_data = {
+        'messages': decrypted_messages,
+        'has_more': offset + len(messages) < total_messages,
+        'total': total_messages
+    }
+    
+    return jsonify(message_encryption.encrypt_api_response(response_data)), 200
 
 @messages_bp.route('/contacts', methods=['GET'])
 @login_required
@@ -218,14 +237,22 @@ def get_contacts():
     except Exception as e:
         return jsonify({'error': 'Failed to load contacts'}), 500
     
-    return jsonify([{
-        'id': user.id,
-        'name': user.name,
-        'phone': user.phone,
-        'avatar': user.avatar,
-        'is_online': user.is_online,
-        'last_seen': user.last_seen.isoformat() if user.last_seen else None
-    } for user in contacts]), 200
+    contact_list = []
+    for user in contacts:
+        last_seen_ist = None
+        if user.last_seen:
+            last_seen_ist = (user.last_seen.replace(tzinfo=None) + timedelta(hours=5, minutes=30)).isoformat()
+        
+        contact_list.append({
+            'id': user.id,
+            'name': user.name,
+            'phone': user.phone,
+            'avatar': user.avatar,
+            'is_online': user.is_online,
+            'last_seen': last_seen_ist
+        })
+    
+    return jsonify(contact_list), 200
 
 @messages_bp.route('/encrypt-id', methods=['POST'])
 @login_required
@@ -279,11 +306,9 @@ def get_media_file(message_id):
         
         # If it's a Telegram URL, proxy the request to hide the bot token
         if file_url.startswith('https://api.telegram.org'):
-            import requests
             try:
                 response = requests.get(file_url, timeout=30)
                 if response.status_code == 200:
-                    from flask import Response
                     return Response(
                         response.content,
                         mimetype=response.headers.get('content-type', 'application/octet-stream'),
@@ -293,7 +318,6 @@ def get_media_file(message_id):
                 pass
         
         # For local files, redirect to the file
-        from flask import redirect
         return redirect(file_url)
         
     except Exception as e:

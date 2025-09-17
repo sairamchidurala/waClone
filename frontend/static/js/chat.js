@@ -288,6 +288,11 @@ class ChatApp {
     async selectContact(contact) {
         this.selectedContact = contact;
         
+        // Mobile: Hide sidebar and show chat
+        if (window.innerWidth <= 768) {
+            document.body.classList.add('mobile-chat-open');
+        }
+        
         // Update UI
         document.querySelectorAll('.contact-item').forEach(item => {
             item.classList.remove('active');
@@ -321,16 +326,22 @@ class ChatApp {
 
     async loadConversation(userId) {
         try {
-            this.messages = await api.getConversation(userId);
+            this.currentPage = 1;
+            this.hasMoreMessages = true;
+            const response = await api.getConversation(userId, 1);
+            
+            if (response.messages) {
+                this.messages = response.messages;
+                this.hasMoreMessages = response.has_more;
+            } else {
+                this.messages = response;
+            }
+            
             this.renderMessages();
+            this.setupScrollListener();
             
             // Force scroll to bottom after messages load
-            setTimeout(() => {
-                const messagesList = document.getElementById('messagesList');
-                if (messagesList) {
-                    messagesList.scrollTop = messagesList.scrollHeight;
-                }
-            }, 100);
+            this.scrollToBottom();
         } catch (error) {
             console.error('Failed to load conversation:', error);
         }
@@ -347,10 +358,35 @@ class ChatApp {
             messagesList.appendChild(messageElement);
         });
 
-        // Multiple attempts to scroll to bottom
-        messagesList.scrollTop = messagesList.scrollHeight;
-        setTimeout(() => messagesList.scrollTop = messagesList.scrollHeight, 0);
-        setTimeout(() => messagesList.scrollTop = messagesList.scrollHeight, 50);
+        // Force scroll to bottom immediately
+        requestAnimationFrame(() => {
+            messagesList.scrollTop = messagesList.scrollHeight;
+            requestAnimationFrame(() => {
+                messagesList.scrollTop = messagesList.scrollHeight;
+            });
+        });
+    }
+    
+    scrollToBottom() {
+        setTimeout(() => {
+            const messagesList = document.getElementById('messagesList');
+            if (messagesList) {
+                messagesList.scrollTo({
+                    top: messagesList.scrollHeight,
+                    behavior: 'instant'
+                });
+            }
+        }, 0);
+        
+        setTimeout(() => {
+            const messagesList = document.getElementById('messagesList');
+            if (messagesList) {
+                messagesList.scrollTo({
+                    top: messagesList.scrollHeight,
+                    behavior: 'instant'
+                });
+            }
+        }, 50);
     }
 
     createMessageElement(message) {
@@ -468,6 +504,7 @@ class ChatApp {
             };
             this.messages.push(localMessage);
             this.renderMessages();
+            this.scrollToBottom();
             
             // Move contact to top locally
             this.moveContactToTop(this.selectedContact.id);
@@ -549,6 +586,7 @@ class ChatApp {
                 sender_id: this.currentUser.id
             });
             this.renderMessages();
+            this.scrollToBottom();
             
             api.socket.emit('send_message', {
                 room: `chat_${Math.min(this.currentUser.id, this.selectedContact.id)}_${Math.max(this.currentUser.id, this.selectedContact.id)}`,
@@ -585,6 +623,7 @@ class ChatApp {
             if (!exists) {
                 this.messages.push(data.message);
                 this.renderMessages();
+                this.scrollToBottom();
                 
                 // Mark as read if chat is open and message is for current user
                 if (data.message.receiver_id === this.currentUser.id) {
@@ -974,26 +1013,50 @@ class ChatApp {
         const messagesList = document.getElementById('messagesList');
         if (!messagesList) return;
         
-        messagesList.addEventListener('scroll', async () => {
-            if (messagesList.scrollTop === 0 && this.selectedContact) {
-                // Load more messages when scrolled to top
+        // Remove existing listener to avoid duplicates
+        messagesList.removeEventListener('scroll', this.scrollHandler);
+        
+        this.scrollHandler = async () => {
+            if (messagesList.scrollTop <= 10 && this.selectedContact && this.hasMoreMessages) {
                 await this.loadMoreMessages();
             }
-        });
+        };
+        
+        messagesList.addEventListener('scroll', this.scrollHandler);
     }
     
     async loadMoreMessages() {
-        if (this.loadingMore || !this.selectedContact) return;
+        if (this.loadingMore || !this.selectedContact || !this.hasMoreMessages) return;
         
         this.loadingMore = true;
+        const messagesList = document.getElementById('messagesList');
+        const scrollHeight = messagesList.scrollHeight;
+        
         try {
             const nextPage = this.currentPage + 1;
-            const olderMessages = await api.getConversation(this.selectedContact.id, nextPage);
+            const response = await api.getConversation(this.selectedContact.id, nextPage);
+            
+            let olderMessages = [];
+            if (response.messages) {
+                olderMessages = response.messages;
+                this.hasMoreMessages = response.has_more;
+            } else {
+                olderMessages = response;
+                this.hasMoreMessages = olderMessages.length === 50;
+            }
             
             if (olderMessages.length > 0) {
                 this.messages = [...olderMessages, ...this.messages];
                 this.currentPage = nextPage;
                 this.renderMessages();
+                
+                // Maintain scroll position
+                setTimeout(() => {
+                    const newScrollHeight = messagesList.scrollHeight;
+                    messagesList.scrollTop = newScrollHeight - scrollHeight;
+                }, 50);
+            } else {
+                this.hasMoreMessages = false;
             }
         } catch (error) {
             console.error('Failed to load more messages:', error);
@@ -1163,6 +1226,11 @@ class ChatApp {
     
     closeChat() {
         this.selectedContact = null;
+        
+        // Mobile: Show sidebar and hide chat
+        if (window.innerWidth <= 768) {
+            document.body.classList.remove('mobile-chat-open');
+        }
         
         // Hide chat elements
         document.getElementById('chatHeader').classList.add('hidden');
