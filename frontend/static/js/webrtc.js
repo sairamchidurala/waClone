@@ -319,12 +319,21 @@ class WebRTCManager {
             
             await window.api.endCall(this.currentCallId);
             
+            // Notify all participants that call ended
             this.socket.emit('call_signal', {
                 type: 'call_ended',
                 call_id: this.currentCallId,
                 duration: duration,
                 room: `call_${this.currentCallId}`
             });
+            
+            // Also notify receiver directly if call was never answered
+            if (this.callStatus === 'ringing') {
+                this.socket.emit('call_signal', {
+                    type: 'call_cancelled',
+                    call_id: this.currentCallId
+                });
+            }
         }
         
         this.cleanup();
@@ -570,6 +579,11 @@ class WebRTCManager {
                     this.handleCallModeChange(data.new_mode);
                 }
                 break;
+            case 'call_cancelled':
+                console.log('Call cancelled by caller');
+                this.hideIncomingCallPopup();
+                this.cleanup();
+                break;
         }
     }
 
@@ -582,6 +596,13 @@ class WebRTCManager {
         }
         if (audioOverlay) {
             audioOverlay.remove();
+        }
+    }
+    
+    hideIncomingCallPopup() {
+        const popup = document.getElementById('incoming-call-popup');
+        if (popup) {
+            popup.classList.add('hidden');
         }
     }
 

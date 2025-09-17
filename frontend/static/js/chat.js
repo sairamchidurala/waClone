@@ -203,6 +203,11 @@ class ChatApp {
         api.socket.on('room_test_result', (data) => {
             console.log('Room test result:', data);
         });
+        
+        api.socket.on('join_conversation', (data) => {
+            console.log('Joining conversation room:', data.room);
+            api.socket.emit('join_room', { room: data.room });
+        });
     }
 
     updateUserInfo() {
@@ -339,6 +344,12 @@ class ChatApp {
         const chatRoom = `chat_${Math.min(this.currentUser.id, contact.id)}_${Math.max(this.currentUser.id, contact.id)}`;
         
         api.socket.emit('join_room', { room: chatRoom });
+        
+        // Notify the other user to join the conversation room
+        api.socket.emit('join_conversation', {
+            room: chatRoom,
+            user_id: contact.id
+        });
         
         console.log('Joined room:', chatRoom);
     }
@@ -546,8 +557,11 @@ class ChatApp {
             this.moveContactToTop(this.selectedContact.id);
             this.renderContacts();
             
-            // Emit to socket for real-time delivery
+            // Join conversation room to receive delivery confirmations
             const roomId = `chat_${Math.min(this.currentUser.id, this.selectedContact.id)}_${Math.max(this.currentUser.id, this.selectedContact.id)}`;
+            api.socket.emit('join_room', { room: roomId });
+            
+            // Emit to socket for real-time delivery
             const messageData = {
                 room: roomId,
                 message: {
@@ -624,8 +638,12 @@ class ChatApp {
             this.renderMessages();
             this.scrollToBottom();
             
+            // Join conversation room to receive delivery confirmations
+            const roomId = `chat_${Math.min(this.currentUser.id, this.selectedContact.id)}_${Math.max(this.currentUser.id, this.selectedContact.id)}`;
+            api.socket.emit('join_room', { room: roomId });
+            
             api.socket.emit('send_message', {
-                room: `chat_${Math.min(this.currentUser.id, this.selectedContact.id)}_${Math.max(this.currentUser.id, this.selectedContact.id)}`,
+                room: roomId,
                 message: message,
                 sender: this.currentUser
             });
@@ -644,9 +662,16 @@ class ChatApp {
         if (data.message.receiver_id === this.currentUser.id) {
             api.socket.emit('message_delivered', { message_id: data.message.id });
             
-            // Move sender contact to top
-            this.moveContactToTop(data.message.sender_id);
-            this.renderContacts();
+            // Add sender to contacts if not exists, then move to top
+            this.addOrMoveContactToTop(data.message.sender_id, data.sender);
+            // Force DOM update with a small delay
+            setTimeout(() => {
+                this.renderContacts();
+            }, 10);
+            
+            // Join conversation room to receive future messages
+            const roomId = `chat_${Math.min(this.currentUser.id, data.message.sender_id)}_${Math.max(this.currentUser.id, data.message.sender_id)}`;
+            api.socket.emit('join_room', { room: roomId });
         }
         
         // Add message to conversation if it's for current chat
@@ -1043,6 +1068,29 @@ class ChatApp {
             // Contact not in list, reload contacts
             this.loadContacts();
         }
+    }
+    
+    addOrMoveContactToTop(contactId, senderData) {
+        const contactIndex = this.contacts.findIndex(c => c.id === contactId);
+        if (contactIndex > 0) {
+            // Contact exists, move to top
+            const contact = this.contacts.splice(contactIndex, 1)[0];
+            this.contacts.unshift(contact);
+        } else if (contactIndex === -1 && senderData) {
+            // New contact, add to top of list
+            console.log('Adding new contact:', senderData.name);
+            const newContact = {
+                id: senderData.id,
+                name: senderData.name,
+                phone: senderData.phone,
+                avatar: senderData.avatar,
+                is_online: senderData.is_online || false,
+                last_seen: new Date().toISOString()
+            };
+            this.contacts.unshift(newContact);
+            console.log('Contacts after adding:', this.contacts.length);
+        }
+        // If contactIndex === 0, contact is already at top
     }
     
     setupScrollListener() {

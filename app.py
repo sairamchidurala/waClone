@@ -114,6 +114,14 @@ def handle_test_room(data):
     logging.info(f'Testing room: {room}')
     emit('room_test_result', {'room': room, 'status': 'ok'}, room=room)
 
+@socketio.on('join_conversation')
+def handle_join_conversation(data):
+    room = data['room']
+    user_id = data['user_id']
+    import logging
+    logging.info(f'Notifying user {user_id} to join conversation room: {room}')
+    emit('join_conversation', {'room': room}, room=f'user_{user_id}')
+
 @socketio.on('leave_room')
 def handle_leave_room(data):
     room = data['room']
@@ -150,6 +158,11 @@ def handle_call_signal(data):
         import logging
         logging.info(f'Call signal: {data["type"]} to room: {room}')
         emit('call_signal', data, room=room, include_self=False)
+    elif data.get('type') == 'call_cancelled':
+        # Handle call cancellation - broadcast to all users
+        import logging
+        logging.info(f'Call cancelled: {data["call_id"]}')
+        emit('call_signal', data, broadcast=True, include_self=False)
 
 @socketio.on('webrtc_offer')
 def handle_webrtc_offer(data):
